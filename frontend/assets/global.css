@@ -1,0 +1,88 @@
+body {
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+h1 {
+  font-size: 2em;
+  line-height: 1.2;
+}
+
+h2 {
+  font-size: 1.75em;
+  font-weight: bold;
+}
+
+h3 {
+  font-size: 1.5em;
+}
+
+code, pre {
+  font-size: 0.9em;
+}
+
+.content-section {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  padding: .5em;
+  margin-bottom: .2em;
+}
+
+
+.q-field--filled .q-field__control:after {
+  display: none;
+}
+.q-field--filled.q-field--highlighted .q-field__control:before {
+  opacity: 1;
+  background: transparent;
+  border: 1px solid black;
+}
+
+
+.q-field--filled .q-field__control {
+  padding-right: 0;
+}
+
+.time-Badge-root {
+  font-weight: 500;
+  margin-bottom: 0.9rem;
+  min-width: 58px;
+  max-width: 58px;
+  padding: 0;
+  margin-top: 2px;
+  background: rgb(248, 249, 250);
+  color: rgb(115 117 120);
+  border: 0.0625rem solid transparent;
+  height: 1.3rem;
+  font-size: 0.95rem;
+  box-sizing: border-box;
+  line-height: calc(1.245rem);
+  justify-content: center;
+  display: inline-flex;
+  align-items: center;
+}
+.time-Badge-inner {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 100%;
+  letter-spacing: normal;
+}
+
+
+@media (max-width: 600px) {
+  body {
+    font-size: 14px;
+  }
+}
+
+@media (min-width: 601px) and (max-width: 1199px) {
+  body {
+    font-size: 16px;
+  }
+}
+
+@media (min-width: 1200px) {
+  body {
+    font-size: 18px;
+  }
+}
