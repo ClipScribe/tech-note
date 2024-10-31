@@ -1,0 +1,21 @@
+spring:
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
+    producer:
+      key-serializer: ${KAFKA_KEY_SERIALIZER}
+      value-serializer: ${KAFKA_VALUE_SERIALIZER}
+    consumer:
+      key-deserializer: ${KAFKA_KEY_DESERIALIZER}
+      value-deserializer: ${KAFKA_VALUE_DESERIALIZER}
+      group-id: ${KAFKA_PREPROCESSING_GROUP_ID}
+    listener:
+      missing-topics-fatal: false
+
+kafka:
+  topic:
+    preprocessing-requests: preprocessing_requests
+    transcription-requests: transcription_requests
+    transcription-results: transcription_results
+    transcription-progress-updates: transcription_progress_updates
+    commentary-progress-updates: commentary_progress_updates
+    model-integration-requests: model_integration_requests
