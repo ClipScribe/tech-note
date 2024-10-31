@@ -1,21 +1,4 @@
-version: '3.8'
-
 services:
-  mysql:
-    image: mysql:8.0
-    container_name: mysql_dev
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD} # MySQL 루트 비밀번호
-      MYSQL_DATABASE: ${MYSQL_DB}        # 데이터베이스 이름
-      MYSQL_USER: ${MYSQL_USER}          # 사용자 이름
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}  # 사용자 비밀번호
-    ports:
-      - "3306:3306"  # MySQL 기본 포트
-    volumes:
-      - mysql_data:/var/lib/mysql
-    networks:
-      - app-network
-
   zookeeper:
     image: confluentinc/cp-zookeeper:7.3.0
     container_name: zookeeper
@@ -41,9 +24,6 @@ services:
       - "9092:9092"
     networks:
       - app-network
-
-volumes:
-  mysql_data:  # MySQL 데이터를 저장할 볼륨
 
 networks:
   app-network:
