@@ -1,4 +1,4 @@
-## 기술 스택
+# 기술 스택
 
 ### Backend
 
@@ -12,9 +12,9 @@
 - Pinia
 - Quasar
 
-## 프로젝트 구조
+# 프로젝트 구조
 
-```
+```bash
 backend/
 ├── kafka
 ├── api-server # SpringBoot
@@ -23,7 +23,7 @@ backend/
 frontend/   # Nuxt3
 ```
 
-## 애플리케이션 실행
+# 애플리케이션 실행
 
 ### Frontend
 
