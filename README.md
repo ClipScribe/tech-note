@@ -1,41 +1,49 @@
 ## 기술 스택
 
-- fastapi
-- pytube (pytubefix)
-- python-ffmpeg
+### Backend
+
+- SpringBoot
+- FastAPI
 - Wisper
+
+### Frontend
+
 - Nuxt3
 - Pinia
 - Quasar
 
-## Frontend
+## 프로젝트 구조
 
-### 애플리케이션 실행
+```
+backend/
+├── kafka
+├── api-server # SpringBoot
+├── llm-server # FastAPI
+└── stt-server # FastAPI
+frontend/   # Nuxt3
+```
+
+## 애플리케이션 실행
+
+### Frontend
 
 ```bash
+npm i
 npm run dev
 ```
 
-## Backend/FastAPI
-
-### 가상환경 설정
+### Backend
 
 ```bash
-# venv 모듈을 이용해 venv 이름으로 가상환경 생성
+# api-server
+./gradlew build
+./gradlew bootRun
+
+# llm-server, stt-server
 python3 -m venv venv
-
-# 가상환경 진입
 source vnev/bin/activate
-
-# pip 버전 업데이트 (필요시)
 python -m pip install --upgrade pip
-
-# 패키지 설치
 pip install -r requirements.txt
-```
 
-### 애플리케이션 실행
-
-```bash
 uvicorn app.main:app --reload
 ```
