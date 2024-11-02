@@ -1,9 +1,0 @@
-  HEAD -> origin/main
-  data_preparation_server
-  develop
-  feature/logger
-  feature/orchestrator
-  feature/sttprocessor
-  feature/validator
-  feature/videodownloader
-  main
