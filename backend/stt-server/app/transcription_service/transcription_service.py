@@ -6,9 +6,6 @@ import whisper
 from pydub import AudioSegment
 import asyncio
 
-from app.domain.transcription_result import TranscriptionResult
-
-
 class TranscriptionService:
     """
     Whisper 모델을 사용하여 오디오 청크를 전사하는 서비스.
@@ -20,7 +17,7 @@ class TranscriptionService:
 
     def __init__(
             self,
-            model_name: str = "base",
+            model_path: str,
             language: str = "en",
             use_gpu: bool = True,
             max_concurrent_tasks: int = 2,
@@ -37,8 +34,8 @@ class TranscriptionService:
             quantize (bool): 모델 양자화 사용 여부.
         """
         try:
-            logger.info(f"Loading Whisper model '{model_name}' with language '{language}'.")
-            self.model = whisper.load_model(model_name)
+            logger.info(f"Loading Whisper model from '{model_path}' with language '{language}'.")
+            self.model = whisper.load_model(model_path)
 
             if quantize:
                 # Whisper 모델의 양자화 기능을 지원하는지 확인 후 적용
@@ -58,7 +55,7 @@ class TranscriptionService:
             logger.error(f"Failed to load Whisper model: {e}")
             raise
 
-    async def transcribe_async(self, audio_chunk: bytes, request_id: str, chunk_id: int) -> TranscriptionResult:
+    async def transcribe_async(self, audio_chunk: bytes):
         """
         비동기적으로 오디오 청크를 전사하여 TranscriptionResult 반환.
 
@@ -71,26 +68,14 @@ class TranscriptionService:
         """
         async with self.semaphore:
             try:
-                logger.debug(f"Starting asynchronous transcription for request_id: {request_id}")
-
-                # 오디오 청크를 AudioSegment로 변환
-                audio = AudioSegment.from_file(io.BytesIO(audio_chunk), format="wav")
-                logger.debug(f"Audio segment duration: {len(audio)}ms")
+                audio_io = io.BytesIO(audio_chunk)
 
                 # Whisper 모델을 사용하여 전사 수행
                 # Whisper의 transcribe 메서드는 파일-like 객체를 받을 수 있다.
-                result = self.model.transcribe(io.BytesIO(audio_chunk), language=self.language)
-                text = result.get('text', '').strip()
-                logger.debug(f"Transcription completed for request_id-chunk_id: {request_id} - {chunk_id}")
-
-                transcription_result = TranscriptionResult(
-                    request_id=request_id,
-                    chunk_id=chunk_id,
-                    text=text,
-                    timestamp=datetime.utcnow()
-                )
-                logger.info(f"Transcription completed for request_id: {transcription_result.request_id}")
+                result = self.model.transcribe(audio_io, language=self.language)
+                transcription_result = result.get('text', '').strip()
                 return transcription_result
+
             except Exception as e:
-                logger.error(f"Transcription failed for request_id-chunk_id: {request_id}-{chunk_id}: {e}")
+                logger.error(f"Transcription failed")
                 raise
