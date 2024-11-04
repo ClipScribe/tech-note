@@ -1,32 +1,46 @@
-# kafka_producer_manager.py
-
 from aiokafka import AIOKafkaProducer
 import json
 
+from app.kafka.kafka_config import (
+    KAFKA_BOOTSTRAP_SERVERS,
+    STT_RESULT_TOPIC,
+    ACKS,
+    MAX_BATCH_SIZE,
+    LINGER_MS,
+    RETRY_BACKOFF_MS
+)
 
-class STTResultProducer:
-    def __init__(self):
+
+class AsyncSTTResultProducer:
+    def __init__(self, topic=STT_RESULT_TOPIC):
         """
-        STT 결과를 카프카에 전송하는 프로듀서 클래스.
-        - 배치 크기와 대기 시간을 조정하여 배치 처리 최적화.
-        - JSON 직렬화 방식 사용.
-        - 최소 한 번 전송 보장을 위해 acks=all 설정.
+        AsyncSTTResultProducer 초기화 시 Kafka 설정을 사용해 프로듀서를 구성.
+        - 최신 aiokafka 파라미터에 맞춰 설정.
         """
+        self.topic = topic
         self.producer = AIOKafkaProducer(
+            loop=None,  # FastAPI의 이벤트 루프 사용
             bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
             value_serializer=lambda v: json.dumps(v).encode('utf-8'),
-            key_serializer=lambda k: k.encode('utf-8'),  # request_id를 메시지 키로 설정
-            acks='all',  # 전송 보장 수준 설정
-            retries=3,  # 전송 실패 시 최대 3회 재시도
-            batch_size=16384,  # 16KB 배치 크기
-            linger_ms=20  # 20ms 대기 시간
+            key_serializer=lambda k: k.encode('utf-8'),
+            acks=ACKS,
+            max_batch_size=MAX_BATCH_SIZE,
+            linger_ms=LINGER_MS,
+            retry_backoff_ms=RETRY_BACKOFF_MS
         )
 
-    def send_stt_result(self, request_id, chunk_id, timestamp, text_chunk):
+    async def start(self):
+        """비동기 프로듀서 시작"""
+        await self.producer.start()
+
+    async def stop(self):
+        """비동기 프로듀서 종료"""
+        await self.producer.stop()
+
+    async def send_stt_result(self, request_id, chunk_id, timestamp, text_chunk):
         """
-        Kafka로 STT 결과 메시지를 전송.
-        - request_id를 키로 사용하여 동일 파일의 모든 청크가 같은 파티션에 들어가 순서를 보장.
-        - 메시지 형식은 JSON으로 직렬화하여 전송.
+        Kafka로 비동기 메시지를 전송.
+        - request_id를 메시지 키로 설정하여 동일 파일의 모든 청크가 같은 파티션으로 들어가도록 함.
         """
         message = {
             "request_id": request_id,
@@ -35,10 +49,5 @@ class STTResultProducer:
             "text_chunk": text_chunk
         }
 
-        # request_id를 메시지 키로 설정해 같은 파티션에 할당
-        self.producer.send(STT_RESULT_TOPIC, key=request_id, value=message)
-        self.producer.flush()  # 전송 보장
-
-    def close(self):
-        """프로듀서를 안전하게 종료"""
-        self.producer.close()
+        # 비동기 메시지 전송
+        await self.producer.send_and_wait(self.topic, key=request_id, value=message)
