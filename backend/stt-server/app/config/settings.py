@@ -2,10 +2,6 @@
 from pydantic import BaseSettings
 
 class Settings(BaseSettings):
-    whisper_model_name: str = "base"
-    kafka_bootstrap_servers: str = "localhost:9092"
-    kafka_client_id: str = "whisper-processor"
-    kafka_topic: str = "transcripts"
     download_dir: str = "downloads"
 
     class Config:
