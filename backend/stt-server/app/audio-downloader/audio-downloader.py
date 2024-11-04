@@ -1,8 +1,5 @@
 import os
-import uuid
 import yt_dlp
-from pydub import AudioSegment
-import ffmpeg
 from typing import Optional
 from loguru import logger
 
