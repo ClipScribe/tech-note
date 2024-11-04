@@ -1,17 +1,10 @@
 from youtube_transcript_api import YouTubeTranscriptApi
-import yt_dlp
+from loguru import logger
 
-import logging
-
-logger = logging.getLogger(__name__)
-
-class YoutubeUtils:
-    '''
-    유튜브 다운로드 처리 관련 클래스
-    '''
+class CaptionService:
 
     @staticmethod
-    async def has_manual_subtitles(video_id, language):
+    async def has_manual_subtitles(video_id, language: str = "en")-> bool:
         try:
             # 비디오의 자막 리스트를 가져옴
             transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
@@ -35,5 +28,34 @@ class YoutubeUtils:
         except Exception as e:
             logger.error(f"비디오 {video_id}의 자막 확인 중 오류 발생: {str(e)}")
             return False
+
+    @staticmethod
+    def split_subtitles_into_chunks(transcript, chunk_duration=60):
+        """
+        자막을 chunk_duration 길이로 나누는 메서드.
+        - transcript: 전체 자막 리스트
+        - chunk_duration: 각 청크의 최대 지속 시간(초 단위)
+        """
+        chunks = []
+        chunk = []
+        current_duration = 0
+        for subtitle in transcript:
+            start_time = subtitle["start"]
+            duration = subtitle["duration"]
+            text = subtitle["text"]
+
+            if current_duration + duration > chunk_duration:
+                chunks.append(chunk)
+                chunk = []
+                current_duration = 0
+
+            chunk.append({"start": start_time, "duration": duration, "text": text})
+            current_duration += duration
+
+        # 마지막 청크 추가
+        if chunk:
+            chunks.append(chunk)
+
+        return chunks
 
 
