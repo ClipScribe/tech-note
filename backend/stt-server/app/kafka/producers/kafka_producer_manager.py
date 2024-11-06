@@ -1,6 +1,8 @@
 from aiokafka import AIOKafkaProducer
+from loguru import logger
 import json
 
+from app.domain.kafka_message.chunk_transcription_result import TranscriptionResultMessage
 from app.kafka.kafka_config import (
     KAFKA_BOOTSTRAP_SERVERS,
     STT_RESULT_TOPIC,
@@ -19,10 +21,8 @@ class AsyncSTTResultProducer:
         """
         self.topic = topic
         self.producer = AIOKafkaProducer(
-            loop=None,  # FastAPI의 이벤트 루프 사용
             bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
             value_serializer=lambda v: json.dumps(v).encode('utf-8'),
-            key_serializer=lambda k: k.encode('utf-8'),
             acks=ACKS,
             max_batch_size=MAX_BATCH_SIZE,
             linger_ms=LINGER_MS,
@@ -37,17 +37,25 @@ class AsyncSTTResultProducer:
         """비동기 프로듀서 종료"""
         await self.producer.stop()
 
-    async def send_stt_result(self, request_id, chunk_id, timestamp, text_chunk):
+    async def send_stt_result(self, chunk_transcription_result: TranscriptionResultMessage):
         """
         Kafka로 비동기 메시지를 전송.
-        - request_id를 메시지 키로 설정하여 동일 파일의 모든 청크가 같은 파티션으로 들어가도록 함.
         """
-        message = {
-            "request_id": request_id,
-            "chunk_id": chunk_id,
-            "timestamp": timestamp,
-            "text_chunk": text_chunk
-        }
+        try:
+            # 메시지 직렬화 전 로깅
+            message_data = chunk_transcription_result.model_dump()
+            logger.info(f"Serialized JSON message data: {message_data}")
 
-        # 비동기 메시지 전송
-        await self.producer.send_and_wait(self.topic, key=request_id, value=message)
+            # 메시지 전송
+            await self.producer.send_and_wait(self.topic, value=message_data)
+            logger.info(f"Successfully sent message to topic {self.topic}: {chunk_transcription_result}")
+        except Exception as e:
+            logger.error(f"Failed to send message to topic {self.topic}: {e}")
+            # 필요시 재시도 로직 추가
+
+
+
+
+
+
+

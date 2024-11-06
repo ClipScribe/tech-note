@@ -1,55 +1,59 @@
-from app.transcription_service.transcription_service import TranscriptionService
-from loguru import logger
 from aiokafka import AIOKafkaConsumer
 import json
-import asyncio
+from loguru import logger
+
+from app.orchestrator.orchestrator import Orchestrator
+from app.kafka.kafka_config import (
+    KAFKA_BOOTSTRAP_SERVERS,
+    VIDEO_REQUEST_TOPIC,
+    STT_RESULT_TOPIC
+)
+from app.audio_downloader.audio_downloader import AudioDownloader
+from app.transcription_service.transcription_service import TranscriptionService
+from app.kafka.producers.kafka_producer_manager import AsyncSTTResultProducer
 
 
-class KafkaApiRequestConsumer:
-    def __init__(
-        self,
-        bootstrap_servers: str,
-        consume_topic: str,
-        consumer_service: ConsumerService
-    ):
-        """
-        KafkaApiRequestConsumer 초기화.
+async def consume():
+    # Kafka consumer 초기화
+    consumer = AIOKafkaConsumer(
+        VIDEO_REQUEST_TOPIC,
+        bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
+        auto_offset_reset='earliest',
+        enable_auto_commit=True,
+        group_id='transcription-group',
+        value_deserializer=lambda x: json.loads(x.decode('utf-8'))
+    )
 
-        Args:
-            bootstrap_servers (str): Kafka 브로커 주소.
-            consume_topic (str): 소비할 Kafka 토픽 이름.
-            consumer_service (ConsumerService): 메시지 처리를 담당하는 서비스 클래스.
-        """
-        try:
-            logger.info(f"Initializing KafkaApiRequestConsumer with servers: {bootstrap_servers}, topic: {consume_topic}.")
-            self.consumer = KafkaConsumer(
-                consume_topic,
-                bootstrap_servers=bootstrap_servers,
-                auto_offset_reset='earliest',
-                enable_auto_commit=True,
-                group_id='transcription-group',
-                value_deserializer=lambda x: json.loads(x.decode('utf-8'))
-            )
-            self.consume_topic = consume_topic
-            self.consumer_service = consumer_service
-            logger.info("KafkaApiRequestConsumer initialized successfully.")
-        except Exception as e:
-            logger.error(f"Failed to initialize KafkaApiRequestConsumer: {e}")
-            raise
+    producer = AsyncSTTResultProducer(STT_RESULT_TOPIC)
 
-    async def consume_messages(self):
-        """
-        Kafka 토픽에서 메시지를 소비하고 ConsumerService를 통해 처리합니다.
-        """
-        logger.info(f"Starting to consume messages from topic '{self.consume_topic}'.")
-        for message in self.consumer:
-            try:
-                logger.info(f"Received message: {message.value}")
-                await self.consumer_service.process_message(message.value)
-            except Exception as e:
-                logger.error(f"Error processing message {message.value}: {e}")
-                continue
+    # Orchestrator 인스턴스 초기화 (필요한 종속성 포함)
+    audio_downloader = AudioDownloader()
+    transcription_service = TranscriptionService(
+        model_path="path/to/whisper_model",  # 실제 모델 경로로 수정
+        language="en",
+        use_gpu=False,
+        max_concurrent_tasks=2,
+        quantize=False
+    )
 
+    orchestrator = Orchestrator(
+        audio_downloader=audio_downloader,
+        transcription_service=transcription_service,
+        kafka_producer=producer
+    )
 
+    await consumer.start()
+    await producer.start()
 
+    try:
+        async for message in consumer:
+            # 메시지 수신 후 Orchestrator에서 처리
+            logger.info(f"Received message: {message.value}")
+            await orchestrator.process_message(message=message.value)
 
+    except Exception as e:
+        logger.error(f"Processing failed with error: {e}")
+
+    finally:
+        await consumer.stop()
+        logger.info("Kafka consumer stopped.")
