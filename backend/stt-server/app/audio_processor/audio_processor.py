@@ -2,6 +2,8 @@ from pydub import AudioSegment, silence
 from typing import List
 import io
 
+from app.domain.dto.audio_chunk_dto import AudioChunk
+
 
 def split_wav_on_silence(file_bytes: bytes,
                          min_silence_len: int = 500,
@@ -56,16 +58,22 @@ def apply_overlap(chunks: List[AudioSegment],
     return final_chunks
 
 
-def export_chunks_to_bytes(chunks: List[AudioSegment]) -> List[bytes]:
+def export_chunks_to_bytes(chunks: List[AudioSegment]) -> List[AudioChunk]:
     """
-    AudioSegment 청크들을 WAV 형식의 바이트 리스트로 변환합니다.
+    AudioSegment 청크들을 WAV 형식의 바이트 리스트로 변환
 
     :param chunks: AudioSegment 청크 리스트
-    :return: WAV 형식의 청크 바이트 리스트
+    :return: AudioChunk 리스트
     """
-    chunk_bytes_list = []
+    chunk_dto_list = []
+    chunk_id=0
     for chunk in chunks:
         chunk_io = io.BytesIO()
         chunk.export(chunk_io, format="wav")
-        chunk_bytes_list.append(chunk_io.getvalue())
-    return chunk_bytes_list
+        audio_chunk_dto = AudioChunk(
+            chunk_id = chunk_id,
+            chunk_data = chunk_io
+        )
+        chunk_dto_list.append(audio_chunk_dto)
+        chunk_id += 1
+    return chunk_dto_list
