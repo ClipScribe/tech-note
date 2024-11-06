@@ -1,20 +1,17 @@
 import io
+import numpy as np
 from datetime import datetime
 from typing import Dict
 from loguru import logger
-import whisper
 from pydub import AudioSegment
 import asyncio
 
+from app.domain.dto.audio_chunk_dto import AudioChunk
+from app.domain.dto.transcription_result_dto import TranscriptionResult
+from transformers import WhisperForConditionalGeneration, WhisperProcessor
+
+
 class TranscriptionService:
-    """
-    Whisper 모델을 사용하여 오디오 청크를 전사하는 서비스.
-
-    Attributes:
-        model (whisper.Model): 로드된 Whisper 모델.
-        semaphore (asyncio.Semaphore): 동시 실행 가능한 전사 작업의 수를 제한.
-    """
-
     def __init__(
             self,
             model_path: str,
@@ -23,59 +20,53 @@ class TranscriptionService:
             max_concurrent_tasks: int = 2,
             quantize: bool = False
     ):
-        """
-        TranscriptionService 초기화.
-
-        Args:
-            model_name (str): 사용할 Whisper 모델 이름.
-            language (str): 전사할 언어.
-            use_gpu (bool): GPU 사용 여부.
-            max_concurrent_tasks (int): 동시 실행 가능한 전사 작업의 최대 수.
-            quantize (bool): 모델 양자화 사용 여부.
-        """
         try:
             logger.info(f"Loading Whisper model from '{model_path}' with language '{language}'.")
-            self.model = whisper.load_model(model_path)
-
-            if quantize:
-                # Whisper 모델의 양자화 기능을 지원하는지 확인 후 적용
-                # 예시로 모델을 FP16으로 변환
-                self.model = self.model.half()
-                logger.info("Whisper model을 FP16으로 양자화.")
-
-            if use_gpu:
-                self.model = self.model.to("cuda")
-                logger.info("Whisper model을 GPU로 실행.")
-            else:
-                logger.info("Whisper model을 CPU로 실행.")
-            self.language = language
-            self.semaphore = asyncio.Semaphore(max_concurrent_tasks)
-            logger.info(f"TranscriptionService initialized with max_concurrent_tasks={max_concurrent_tasks}.")
+            self.model = WhisperForConditionalGeneration.from_pretrained(
+                model_path, local_files_only=True
+            )
+            self.processor = WhisperProcessor.from_pretrained(model_path)
+            logger.info("Local model loaded successfully.")
         except Exception as e:
-            logger.error(f"Failed to load Whisper model: {e}")
-            raise
+            logger.warning(f"Local model not found. Loading temporary model from Hugging Face Hub due to: {e}")
+            # 임시 모델로 대체
+            self.model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-tiny")
+            self.processor = WhisperProcessor.from_pretrained("openai/whisper-tiny")
+            logger.info("Temporary model 'openai/whisper-tiny' loaded.")
 
-    async def transcribe_async(self, audio_chunk: bytes):
-        """
-        비동기적으로 오디오 청크를 전사하여 TranscriptionResult 반환.
+        # 모델 설정
+        if quantize:
+            self.model = self.model.half()
+            logger.info("Whisper model을 FP16으로 양자화.")
 
-        Args:
-            audio_chunk (bytes): WAV 형식의 오디오 청크 데이터.
-            request_id (str): 전사 요청 ID.
+        self.model = self.model.to("cuda" if use_gpu else "cpu")
+        logger.info(f"Whisper model을 {'GPU' if use_gpu else 'CPU'}로 실행.")
+        self.language = language
+        self.semaphore = asyncio.Semaphore(max_concurrent_tasks)
+        logger.info(f"TranscriptionService initialized with max_concurrent_tasks={max_concurrent_tasks}.")
 
-        Returns:
-            TranscriptionResult: 전사된 텍스트와 메타데이터.
-        """
+    async def transcribe_async(self, audio_chunk: AudioChunk) -> TranscriptionResult:
         async with self.semaphore:
             try:
-                audio_io = io.BytesIO(audio_chunk)
+                # AudioSegment로 BytesIO 데이터를 읽어 ndarray로 변환
+                audio_segment = AudioSegment.from_file(audio_chunk.chunk_data, format="wav")
+                audio_data = np.array(audio_segment.get_array_of_samples()).astype(np.float32) / 32768.0
 
-                # Whisper 모델을 사용하여 전사 수행
-                # Whisper의 transcribe 메서드는 파일-like 객체를 받을 수 있다.
-                result = self.model.transcribe(audio_io, language=self.language)
-                transcription_result = result.get('text', '').strip()
+                # 입력 변환 및 전사 실행
+                inputs = self.processor(audio_data, sampling_rate=16000, return_tensors="pt").input_features
+                inputs = inputs.to("cuda") if self.model.device == "cuda" else inputs
+
+                # 전사 수행
+                generated_ids = self.model.generate(inputs)
+                transcription_text = self.processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
+
+                # 결과 생성
+                transcription_result = TranscriptionResult(
+                    chunk_id=audio_chunk.chunk_id,
+                    transcription_text=transcription_text
+                )
                 return transcription_result
 
             except Exception as e:
-                logger.error(f"Transcription failed")
+                logger.error(f"Transcription failed: {e}")
                 raise
