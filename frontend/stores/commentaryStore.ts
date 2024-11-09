@@ -1,6 +1,8 @@
-import { useCreateHtml } from '~/composables/useCreateHtml'
+import {useCreateHtml} from '~/composables/useCreateHtml'
 import type {Ref} from "vue";
 import type {Commentary} from "~/types/commentary";
+import {useVideoStore} from "~/stores/videoStore";
+import {target} from "@vue/devtools-shared";
 
 const MARKDOWN_TEXT = `
 ### Revisited: Dining Philosopher
@@ -34,107 +36,118 @@ print(greet())
 `;
 
 interface CommentaryStore {
-    commentaryContent: Ref<string>;
     isGenerateCommentariesCompleted: Ref<boolean>;
-    totalCommentaries: Ref<Commentary[]>;
-    prevCommentaryIndex: number;
-    clearCommentaryContent: () => void;
-    generateContentArray: () => void;
-    setCommentaryContent: (currentTime?: number) => Promise<void>;
+    isCommentaryFollowingVideo: Ref<boolean>;
+    commentaries: Ref<Commentary[]>
     getIsGenerateCommentariesCompleted: () => boolean;
+    getIsCommentaryFollowingVideo: () => boolean;
     getCommentaries: () => Commentary[];
-    getTotalCommentaries: () => Commentary[];
+    generateCommentaries: () => Promise<void>;
+    updateCommentaries: (currentTime: number) => void;
+    setIsCommentaryFollowingVideo: (followingVideo: boolean) => void;
+    setScrollableCommentaries: () => void;
+    getCurrentCommentaryTime: () => number;
 }
 
 export const useCommentaryStore = defineStore('commentary', (): CommentaryStore => {
-    const { createHtmlFromCommentary, createHtmlFromCommentaries } = useCreateHtml();
-    const isGenerateCommentariesCompleted = ref<boolean>(false);
-    const totalCommentaries = ref<Commentary[]>([]);
-    let prevCommentaryIndex = -1;
-    const commentaryContent = ref<string>('');
+    const AUTO_DISPLAY_COMMENTARY_SIZE = 1;
 
-    const clearCommentaryContent = () => {
-        prevCommentaryIndex = -1;
-        commentaryContent.value = "";
+    const {createHtmlFromCommentary} = useCreateHtml();
+    const isGenerateCommentariesCompleted: Ref<boolean> = ref<boolean>(false);
+    const isCommentaryFollowingVideo: Ref<boolean> = ref<boolean>(false);
+    const commentaries: Ref<Commentary[]> = ref<Commentary[]>([]);
+    const totalCommentaries: Commentary[] = [];
+    // v-for 변경 해주기 위함
+     /*
+        SSE 로 해설을 받으면 totalCommentaries에 추가한다.
+     */
+    const addCommentary = async (startTime: number, content: string):Promise<void> => {
+        const htmlContent = await createHtmlFromCommentary(startTime, content);
+        const commentary = createCommentary(startTime, htmlContent);
+        totalCommentaries.push(commentary);
+        commentaries.value.push(commentary);
     }
 
-    const generateContentArray = () => {
+    const createCommentary = (startTime:number, htmlContent: string) : Commentary => {
+        return {
+            startTime,
+            htmlContent
+        }
+    }
+
+    /*
+        임시 함수
+     */
+    const generateCommentaries = async () :Promise<void> => {
+        // 데이터를 받아왔다 가정
         for (let i = 0; i <= 50; i += 1) {
-            const commentary: Commentary = {
-                startTime: i*20,
-                content: `${i.toString()}번째 문맥 \n ${MARKDOWN_TEXT}`
-            }
-            addCommentary(commentary);
+            const startTime = i * 20;
+            const content = `${i.toString()}번째 문맥 \n ${MARKDOWN_TEXT}`
+            await addCommentary(startTime, content);
         }
         isGenerateCommentariesCompleted.value = true;
     };
 
-    const addCommentary = (commentary: Commentary): void => {
-        totalCommentaries.value.push(commentary);
+    const setScrollableCommentaries = () => {
+        if(commentaries.value.length == AUTO_DISPLAY_COMMENTARY_SIZE) {
+            // Duplicate Key 해결
+            commentaries.value = [];
+
+            commentaries.value = totalCommentaries;
+        }
     }
 
-    const getTotalCommentaries = () => totalCommentaries.value;
-
-    const setCommentaryContent = async (currentTime?: number): Promise<void> => {
-        console.log("실행됌"+currentTime)
-        prevCommentaryIndex = -1;
-        if (!currentTime) {
-            commentaryContent.value = await createHtmlFromCommentaries(totalCommentaries.value);
-            return;
-        }
-        // 현재시간 기준으로 currentTime 보다 작은 startTime 을 가지는 Commentary 를 변환
-        if (totalCommentaries.value.length == 0) return;
-        if(
-            // 이전 탐색 결과가 있고
-            prevCommentaryIndex != -1 &&
-            // 시작 시간이 현재 시간보다 작을 때
-            totalCommentaries.value[prevCommentaryIndex].startTime < currentTime &&
-            (
-                // 마지막인덱스 이거나
-                prevCommentaryIndex == totalCommentaries.value.length-1 ||
-                // startTime 이 다음 요소의 startTime 보다 값이 작다면
-                currentTime < totalCommentaries.value[prevCommentaryIndex+1].startTime
-            )
-        ) {
-            return;
-        }
-        const targetCommentaryIndex : number = getTargetCommentaryIndex(totalCommentaries.value, currentTime);
-        prevCommentaryIndex = targetCommentaryIndex;
-        commentaryContent.value = await createHtmlFromCommentary(totalCommentaries.value[targetCommentaryIndex]);
+    // 재생위치로 이동
+    const updateCommentaries = (currentTime: number): void => {
+        const startIndex = getTargetCommentaryIndex(currentTime);
+        const commentary: Commentary = totalCommentaries[startIndex];
+        commentaries.value = [commentary]
     }
 
-
-    const getTargetCommentaryIndex = (source : Commentary[], currentTime: number ) : number => {
+    const getTargetCommentaryIndex = (currentTime: number): number => {
         let start: number = 0;
-        let end: number = source.length-1;
-        let result: number = -1;
-        while(start <= end) {
+        let end: number = totalCommentaries.length - 1;
+        let index: number = -1;
+        while (start <= end) {
             const mid = (start + end) >> 1;
-            if(source[mid].startTime <= currentTime) {
-                result = mid;
+            if (totalCommentaries[mid].startTime <= currentTime) {
+                index = mid;
                 start = mid + 1
             } else {
                 end = mid - 1;
             }
         }
-
-        return result;
+        return index;
     }
+
+    const setIsCommentaryFollowingVideo = (isFollowing: boolean) => {
+        isCommentaryFollowingVideo.value = isFollowing;
+    }
+
+    const getIsCommentaryFollowingVideo = () => isCommentaryFollowingVideo.value;
 
     const getIsGenerateCommentariesCompleted = () => isGenerateCommentariesCompleted.value;
 
-    const getCommentaries = () => totalCommentaries.value;
+    const getCommentaries = () => commentaries.value;
+
+    const getCurrentCommentaryTime = () : number=> {
+        const videoStore = useVideoStore();
+        const currentTime = videoStore.getCurrentVideoTime();
+        const targetCommentaryIndex = getTargetCommentaryIndex(currentTime);
+        return totalCommentaries[targetCommentaryIndex].startTime
+    }
 
     return {
-        commentaryContent,
+        isCommentaryFollowingVideo,
         isGenerateCommentariesCompleted,
-        totalCommentaries,
-        prevCommentaryIndex,
-        clearCommentaryContent,
-        generateContentArray,
-        setCommentaryContent,
+        commentaries,
+        getIsCommentaryFollowingVideo,
+        generateCommentaries,
         getIsGenerateCommentariesCompleted,
         getCommentaries,
-        getTotalCommentaries
+        updateCommentaries,
+        setIsCommentaryFollowingVideo,
+        setScrollableCommentaries,
+        getCurrentCommentaryTime
     };
 })
