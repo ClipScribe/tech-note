@@ -1,9 +1,7 @@
 <template>
   <q-header
-
       elevated
-      class="bg-indigo-2 text-dark row items-center justify-center custom-header"
-      style="height: 90px"
+      class="bg-indigo-2 text-dark row items-center justify-center app-header"
   >
     <q-toolbar>
       <q-toolbar-title>
@@ -18,5 +16,13 @@
 </script>
 
 <style scoped>
+.app-header {
+  height: 90px;
+}
 
+@media (max-width: 767px) { /* 모바일 장치에 적용 */
+  .app-header {
+    height: 70px;
+  }
+}
 </style>

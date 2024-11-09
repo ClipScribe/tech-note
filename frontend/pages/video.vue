@@ -20,16 +20,15 @@ definePageMeta({
   height: calc(100vh - 90px);
 }
 
-@media (max-width: 600px) {
+@media (max-width: 768px) {
+  /* 모바일 스타일 */
   .video-page {
-    display: flex;
-
+    height: auto;
+    align-content: flex-start;
+    justify-content: flex-start;
+    flex-direction: column;
+    align-items: center;
   }
 }
 
-@media (min-width: 601px) and (max-width: 1199px) {
-  .video-page {
-    display: flex;
-  }
-}
 </style>

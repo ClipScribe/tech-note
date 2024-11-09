@@ -1,37 +1,56 @@
 <template>
+  <div>
+    <q-btn v-if="isCommentaryFollowingVideo"
+           unelevated
+           @click="debouncedStopAutoDisplayCommentary"
+           label="영상 따라가기"
+           icon="adjust"
+           class="toggle-btn q-mr-sm q-pa-x-sm q-pa-y-xs bg-grey-3 text-grey-9 border q-border-grey-3 text-bold no-ripple icon-spacing"
+    />
+    <q-btn v-else
+           unelevated
+           @click="debouncedStartAutoDisplayCommentary"
+           label="자유롭게 보기"
+           icon="sticky_note_2"
+           class="toggle-btn q-mr-sm q-pa-x-sm q-pa-y-xs bg-grey-3 text-grey-9 border q-border-grey-3 text-bold no-ripple icon-spacing"
+    />
     <q-btn
         unelevated
-        @click="startFollowVideo"
+        @click="scrollTo"
         label="재생위치로 이동"
-        icon="adjust"
-        class="q-mr-sm q-pa-x-sm q-pa-y-xs bg-grey-3 text-grey-9 border q-border-grey-3 text-bold no-ripple icon-spacing"
-        :disable="followVideo"
+        icon="filter_center_focus"
+        class="toggle-btn q-mr-sm q-pa-x-sm q-pa-y-xs bg-grey-3 text-grey-9 border q-border-grey-3 text-bold no-ripple icon-spacing"
+        :disable="isCommentaryFollowingVideo"
     />
+  </div>
 </template>
 
 <script setup lang="ts">
-import { useVideoStore } from "~/stores/videoStore";
-import { useCommentaryStore } from "~/stores/commentaryStore"
+import {useCommentaryStore} from "~/stores/commentaryStore"
 import {useAutoDisplayCommentary} from "~/composables/useAutoDisplayCommentary";
-import {computed} from "vue";
+import {useDebounce} from "~/composables/useDebounce";
 
-
-const videoStore = useVideoStore();
 const commentaryStore = useCommentaryStore();
-const followVideo = computed(() => videoStore.followVideo);
+const {startAutoDisplayCommentary, stopAutoDisplayCommentary} = useAutoDisplayCommentary();
 
-const { startAutoDisplay } = useAutoDisplayCommentary();
+const {debounce} = useDebounce();
+const debouncedStartAutoDisplayCommentary = debounce(startAutoDisplayCommentary, 100);
+const debouncedStopAutoDisplayCommentary = debounce(stopAutoDisplayCommentary, 100);
+const isCommentaryFollowingVideo = computed(() => commentaryStore.getIsCommentaryFollowingVideo());
 
-const startFollowVideo = () => {
-  commentaryStore.clearCommentaryContent();
-  startAutoDisplay();
-};
+const scrollTo = () => {
+  const startTime = commentaryStore.getCurrentCommentaryTime();
+  const elementId = `c-ST-${startTime}`; // 이동할 요소의 ID 생성
+  const element = document.getElementById(elementId); // 요소 선택
 
-
+  if (element) {
+    element.scrollIntoView({ behavior: 'smooth' }); // 부드러운 스크롤로 이동
+  }
+}
 </script>
 
 <style scoped>
-.q-btn>>>.q-icon {
+.q-btn >>> .q-icon {
   margin-right: .3em;
   font-size: 1.2rem;
   margin-top: .125rem;

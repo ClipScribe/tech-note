@@ -16,7 +16,7 @@ definePageMeta({
 const videoStore = useVideoStore();
 const commentaryStore = useCommentaryStore();
 
-const { startAutoDisplay, stopAutoDisplay } = useAutoDisplayCommentary();
+const { startAutoDisplayCommentary, stopAutoDisplayCommentary } = useAutoDisplayCommentary();
 
 const loadYouTubeAPI = () => {
   return new Promise<void>((resolve) => {
@@ -35,6 +35,13 @@ const loadYouTubeAPI = () => {
   });
 };
 
+const getVideoIdFromUrl = (url: string): string | null => {
+  const match = url.match(
+      /^https:\/\/www\.youtube\.com\/watch\?v=([\w-]{11})$/
+  );
+  return match ? match[1] : null;
+};
+
 const initializePlayer = () => {
   const videoId = getVideoIdFromUrl(videoStore.getVideoURL());
   if (!videoId) return;
@@ -50,46 +57,57 @@ const initializePlayer = () => {
   videoStore.setPlayer(videoPlayer);
 };
 
-const onPlayerReady = (event: any) => {
+const onPlayerReady = async (event: any) => {
   event.target.playVideo();
+  // 해설 생성 시작
+  await commentaryStore.generateCommentaries();
   // SSE 완료 후 실행해야 함
-  commentaryStore.generateContentArray();
-  startAutoDisplay();
+  startAutoDisplayCommentary();
 };
 
-// const beginAutoDisplayCommentary = () => {
-//   videoStore.intervalId = window.setInterval(async () => {
-//     const currentTime: number = player.value.getCurrentTime();
-//     console.log("현재 재생 시간:", currentTime);
-//     if (!commentaryStore.getIsGenerateCommentariesCompleted()) return;
-//     console.log(isFollowingVideo.value);
-//     if (!isFollowingVideo.value) return;
-//     await commentaryStore.setCommentaryContent(currentTime);
-//   }, 1000);
-// };
-
-const getVideoIdFromUrl = (url: string): string | null => {
-  const match = url.match(
-      /^https:\/\/www\.youtube\.com\/watch\?v=([\w-]{11})$/
-  );
-  return match ? match[1] : null;
-};
 
 onMounted(async () => {
   await loadYouTubeAPI();
   initializePlayer();
 });
+
+onBeforeUnmount(() => {
+  stopAutoDisplayCommentary();
+});
+
 </script>
 
 <style scoped>
 .video-container {
   flex: 1;
+  height: calc(100% - 90px);
   margin-right: 450px;
+  padding-right: 450px;
   background-color: black;
+  overflow-y: hidden;
+  position: fixed;
+  width:100%;
+
 }
 
 #player {
   width: 100%;
   height: 100%;
+}
+
+@media (max-width: 768px) {
+  .video-container {
+    flex: 1;
+    width: 100%;
+    position: inherit;
+    height: 100%;
+    margin-right: 0;
+    padding-right: 0;
+  }
+
+  #player {
+    height: 40vw;
+    width: 100%;
+  }
 }
 </style>
