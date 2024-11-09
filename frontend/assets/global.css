@@ -23,7 +23,7 @@ code, pre {
 
 .content-section {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  padding: .5em;
+  padding: .5rem;
   margin-bottom: .2em;
 }
 
@@ -69,9 +69,9 @@ code, pre {
 }
 
 
-@media (max-width: 600px) {
+@media (max-width: 788px) {
   body {
-    font-size: 14px;
+    font-size: 12px;
   }
 }
 

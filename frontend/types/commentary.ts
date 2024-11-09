@@ -6,6 +6,6 @@ export enum KnowledgeLevel {
 
 export interface Commentary {
     startTime: number;
-    content: string;
+    htmlContent: string;
 }
 
