@@ -1,28 +1,39 @@
 import {useCommentaryStore} from "~/stores/commentaryStore";
 import {useVideoStore} from "~/stores/videoStore";
 
-export const useAutoDisplayCommentary = () => {
+interface UseAutoDisplayCommentary {
+    startAutoDisplayCommentary: () => void
+    stopAutoDisplayCommentary: () => void
+}
+
+export const useAutoDisplayCommentary = (): UseAutoDisplayCommentary => {
     const commentaryStore = useCommentaryStore();
     const videoStore = useVideoStore();
+    const INTERVAL_DURATION_MS = 1000;
 
-    const startAutoDisplay = async (): Promise<void> => {
-        videoStore.startFollowVideo();
-
-        if(videoStore.intervalId) return;
-        videoStore.intervalId = setInterval(async () => {
-            const currentTime = videoStore.getPlayer().getCurrentTime();
-            console.log(`영상 재생 시간: ${currentTime}`)
-            if(!currentTime) return;
-            if (!commentaryStore.getIsGenerateCommentariesCompleted()) return;
-            if (!videoStore.followVideo) return;
-            await commentaryStore.setCommentaryContent(currentTime);
-        }, 1000);
+    const displayCommentary = (): void => {
+        const currentTime = videoStore.getPlayer().getCurrentTime();
+        console.log(`영상 재생 시간: ${currentTime}`);
+        commentaryStore.updateCommentaries(currentTime);
     };
 
-    const stopAutoDisplay = () => {
-        videoStore.stopFollowVideo();
+    const startAutoDisplayCommentary = (): void => {
+        commentaryStore.setIsCommentaryFollowingVideo(true);
+        const executeDisplay = ():void => {
+            const isCommentaryFollowingVideo: boolean = commentaryStore.getIsCommentaryFollowingVideo();
+            if (isCommentaryFollowingVideo) {
+                displayCommentary();
+                setTimeout(executeDisplay, INTERVAL_DURATION_MS);
+            }
+        }
+        executeDisplay();
     };
 
-    return { startAutoDisplay, stopAutoDisplay };
+    const stopAutoDisplayCommentary = () => {
+        commentaryStore.setIsCommentaryFollowingVideo(false);
+        commentaryStore.setScrollableCommentaries();
+    };
+
+    return {startAutoDisplayCommentary, stopAutoDisplayCommentary};
 };
 
