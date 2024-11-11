@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "build": "nuxt build",
-    "dev": "nuxt dev",
+    "dev": "nuxt dev --port 3000",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare"
@@ -19,6 +19,7 @@
     "nuxt": "^3.13.0",
     "pinia": "^2.2.4",
     "quasar": "^2.17.0",
+    "uuid": "^11.0.2",
     "vue": "latest",
     "vue-router": "latest"
   },
