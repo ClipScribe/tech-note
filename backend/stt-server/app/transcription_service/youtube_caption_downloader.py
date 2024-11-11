@@ -10,6 +10,7 @@ import os
 logger.remove()
 logger.add(sys.stderr, format="{time} {level} {message}", level="INFO")
 
+
 # 자막 목록을 가져오는 함수
 async def get_transcript_list(video_id):
     """YouTube 동영상의 자막 목록을 반환하는 함수"""

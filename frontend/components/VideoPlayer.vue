@@ -5,9 +5,10 @@
 </template>
 
 <script setup lang="ts">
-import {onMounted} from "vue";
+import {onMounted, onBeforeUnmount} from "vue";
 import {useVideoStore} from "~/stores/videoStore";
 import {useCommentaryStore} from "~/stores/commentaryStore";
+import {v4 as uuidV4 } from "uuid";
 
 definePageMeta({
   middleware: "check-video-url",
@@ -65,14 +66,31 @@ const onPlayerReady = async (event: any) => {
   startAutoDisplayCommentary();
 };
 
+// 서버와의 SSE 연결을 관리할 변수
+let eventSource: EventSource;
 
 onMounted(async () => {
   await loadYouTubeAPI();
   initializePlayer();
+
+  const requestId: String = uuidV4();
+  eventSource = new EventSource(`http://localhost:8080/sse/connect/${requestId}`);
+
+  eventSource.onmessage = (event) => {
+    console.log("Received message:", event.data);
+  };
+
+  eventSource.onerror = (error) => {
+    console.error("Error receiving SSE:", error);
+  };
 });
 
 onBeforeUnmount(() => {
   stopAutoDisplayCommentary();
+  if(eventSource) {
+    console.log("eventSource close");
+    eventSource.close()
+  }
 });
 
 </script>
