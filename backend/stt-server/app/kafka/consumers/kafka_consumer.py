@@ -57,3 +57,20 @@ async def consume():
     finally:
         await consumer.stop()
         logger.info("Kafka consumer stopped.")
+
+
+async def consume_request(consumer, processor):
+    logger.info("STT 결과물을 소비하기 시작합니다.")
+    try:
+        async for msg in consumer:
+            # STTChunkResultMessage 클래스를 사용하여 메시지 파싱
+            logger.info(f"request message consume: {msg.value}")
+
+            request = msg.value
+            await processor.process_message(request)
+
+
+    except Exception as e:
+        logger.error(f"STT 결과물 소비 중 오류 발생: {e}")
+    finally:
+        logger.info("STT 결과물 소비 종료.")
