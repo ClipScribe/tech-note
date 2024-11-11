@@ -4,14 +4,15 @@ from queue import PriorityQueue
 from app.audio_downloader.audio_downloader import AudioDownloader
 from app.domain.dto.transcription_result_dto import TranscriptionResult
 from app.domain.kafka_message.chunk_transcription_result import TranscriptionResultMessage
-from app.kafka.producers.kafka_producer_manager import AsyncSTTResultProducer
+from app.kafka.kafka_config import STT_RESULT_TOPIC
+from app.kafka.producers.kafka_producer_manager import AsyncProducer
 from app.transcription_service.transcription_service import TranscriptionService
 from app.audio_processor.audio_processor import *
 
 
 
 class Orchestrator:
-    def __init__(self,audio_downloader: AudioDownloader ,transcription_service: TranscriptionService, kafka_producer: AsyncSTTResultProducer):
+    def __init__(self, audio_downloader: AudioDownloader, transcription_service: TranscriptionService, kafka_producer: AsyncProducer):
         """
         Orchestrator 초기화 메서드
 
@@ -59,7 +60,7 @@ class Orchestrator:
             logger.info(f"Generated Kafka message: {transcription_result_message.model_dump()}")
 
             # Kafka로 발행
-            await self.kafka_producer.send_stt_result(transcription_result_message)
+            await self.kafka_producer.send_message(transcription_result_message, topic=STT_RESULT_TOPIC)
 
 
     async def process_message(self, message: dict):

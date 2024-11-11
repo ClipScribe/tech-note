@@ -10,7 +10,7 @@ from app.kafka.kafka_config import (
 )
 from app.audio_downloader.audio_downloader import AudioDownloader
 from app.transcription_service.transcription_service import TranscriptionService
-from app.kafka.producers.kafka_producer_manager import AsyncSTTResultProducer
+from app.kafka.producers.kafka_producer_manager import AsyncProducer
 
 
 async def consume():
@@ -24,7 +24,7 @@ async def consume():
         value_deserializer=lambda x: json.loads(x.decode('utf-8'))
     )
 
-    producer = AsyncSTTResultProducer(STT_RESULT_TOPIC)
+    producer = AsyncProducer(STT_RESULT_TOPIC)
 
     # Orchestrator 인스턴스 초기화 (필요한 종속성 포함)
     audio_downloader = AudioDownloader()
