@@ -1,76 +1,82 @@
-import json
-from datetime import datetime
-
 from loguru import logger
 
 from app.domain.kafka_message.initiate_request_message import InitiateRequestMessage
 from app.domain.kafka_message.stt_chunk_result_message import STTChunkResultMessage
-from app.domain.dto.chunk_message_dto import ChunkMessageDto
-from app.orchestrator.orchestrator import *
+
+from app.message_processor.message_processor import *
+from app.text_utils.text_utils import TextMergerToFile
 
 
-async def consume_initial_requests(consumer, producer, processors):
-    logger.info("초기 요청을 소비하기 시작합니다.")
+async def consume_initial_messages(consumer, initial_messages):
+    """
+    초기 메시지를 소비하고 request_id별로 정보를 저장하는 함수.
+    요청 처리가 완료되면 해당 request_id의 정보를 삭제합니다.
+
+    Parameters:
+        consumer: Kafka consumer 인스턴스
+        initial_messages (dict): 초기 메시지를 저장하는 딕셔너리, key는 request_id
+    """
+    logger.info("초기 메시지를 소비하기 시작합니다.")
 
     try:
         async for msg in consumer:
-            # InitiateRequestMessage 클래스를 사용하여 메시지 파싱
-            initiate_request = InitiateRequestMessage.model_validate_json(msg.value)
-            request_id = initiate_request.request_id
-            total_chunk_num = initiate_request.total_chunk_num
-            explanation_level = initiate_request.explanation_level
+            # InitialMessage로 메시지 파싱
+            logger.info(f"Initial message consume: {msg.value}")
+            initial_message = InitiateRequestMessage.model_validate_json(msg.value)
 
-            logger.info(f"초기 메시지 수신: request_id {request_id}")
-            processors[request_id] = RequestProcessor(request_id=request_id, total_chunk_num=total_chunk_num, producer=producer)
-            await processors[request_id].add_initial_message(explanation_level)
+            request_id = initial_message.request_id
+
+            # 초기 메시지를 딕셔너리에 저장
+            initial_messages[request_id] = initial_message
+            logger.info(f"Request ID '{request_id}'의 초기 메시지를 저장했습니다.")
 
     except Exception as e:
-        logger.error(f"초기 요청 소비 중 오류 발생: {e}")
+        logger.error(f"초기 메시지 소비 중 오류 발생: {e}")
     finally:
-        logger.info("초기 요청 소비 종료.")
+        logger.info("초기 메시지 소비 종료.")
 
 
-async def consume_stt_results(consumer, processors, assistant_id):
+async def consume_stt_results(consumer, initial_messages):
+    """
+    STT 결과물을 소비하고 텍스트를 재구성하여 병합하는 함수.
+    각 request_id별로 메시지를 순서에 맞게 병합하여 원본 텍스트로 재구성하고,
+    전체 chunk_id가 다 모이면 initial_messages에서 삭제.
+
+    Parameters:
+        consumer: Kafka consumer 인스턴스
+        initial_messages (dict): request_id를 키로 초기 메시지 정보를 저장하는 딕셔너리
+    """
     logger.info("STT 결과물을 소비하기 시작합니다.")
+
     try:
         async for msg in consumer:
-            # STTChunkResultMessage 클래스를 사용하여 메시지 파싱
+            # STTChunkResultMessage로 메시지 파싱
             logger.info(f"chunk message consume: {msg.value}")
             stt_result = STTChunkResultMessage.model_validate_json(msg.value)
+
             request_id = stt_result.request_id
             chunk_id = stt_result.chunk_id
-            timestamp = stt_result.timestamp
-            content = stt_result.content
+            transcription_text = stt_result.transcription_text
 
-            # 일반 chunk 메시지를 DTO로 변환
-            chunk_message = ChunkMessageDto(
-                request_id=request_id,
-                chunk_id=chunk_id,
-                timestamp=timestamp,
-                content=content
-            )
+            # initial_messages에 request_id가 없다면 새로 초기화
+            if request_id not in initial_messages:
+                logger.error(f"Request ID '{request_id}'에 대한 초기 정보가 존재하지 않습니다. 메시지를 스킵합니다.")
+                continue
 
-            processor = processors[request_id]
-            processor.add_message(chunk_message)
+            # 초기 메시지에서 전체 청크 개수 가져오기
+            total_chunks = initial_messages[request_id].total_chunks
 
-            # 메시지가 30개 이상 모였는지 확인 후 처리
-            if processor.priority_message_queue.qsize() > 30:
-                logger.info(f"30개 청크 단위로 segment 생성 시작: request_id {request_id}")
-                segment = await processor.process_message_to_segment(batch_size=30)
-                logger.info(f"30개 청크 단위로 segment 생성 끝: request_id {request_id}")
-                await processor.run_stream(assistant_id=assistant_id, thread_id=processor.thread.id, segment_start_time=segment.start_time)
-                logger.info(f"생성한 segment로 run_stream: request_id {request_id}")
+            # STT 메시지에서 텍스트를 추출하여 병합 파일에 추가
+            TextMergerToFile.add_message(request_id, {"request_id": request_id, "chunk_id": chunk_id,
+                                                      "transcription_text": transcription_text})
+            logger.debug(f"Request ID '{request_id}', Chunk ID '{chunk_id}' 병합 처리 완료.")
 
-
-            # 마지막 청크 확인 시 프로세서 삭제
-            if processor.current_chunk_id >= processor.total_chunk_num:
-                if not processor.priority_message_queue.empty():
-                    logger.info(f"남은 chunk들로 segment 생성 및 실행: request_id {request_id}")
-                    segment = await processor.process_message_to_segment(batch_size=30)
-                    await processor.run_stream(assistant_id=assistant_id, thread_id=processor.thread.id, segment_start_time=segment.start_time)
-                logger.info(f"모든 청크가 처리되었습니다: request_id {request_id}")
-                processor.close_request()
-                del processors[request_id]  # 메모리에서 제거
+            # 모든 청크가 처리되었는지 확인
+            if chunk_id == total_chunks - 1:
+                # 병합 완료 시 최종 텍스트를 로그에 표시하고 initial_messages에서 삭제
+                logger.info(f"Request ID '{request_id}'의 모든 청크 병합이 완료되었습니다.")
+                merged_text = TextMergerToFile.get_merged_text(request_id)
+                logger.debug(f"최종 병합된 텍스트 (미리보기): {merged_text[:50]}...")
 
     except Exception as e:
         logger.error(f"STT 결과물 소비 중 오류 발생: {e}")
