@@ -9,6 +9,7 @@ export interface VideoStore {
     setPlayer: (player: any) => void;
     getPlayer: () => any;
     getCurrentVideoTime: () => number;
+    setPlayerSize: (windowWidth: number) => void;
 }
 
 export const useVideoStore = defineStore('video', (): VideoStore => {
@@ -31,6 +32,13 @@ export const useVideoStore = defineStore('video', (): VideoStore => {
         return videoPlayer.value.getCurrentTime();
     }
 
+    const setPlayerSize = (windowWidth: number) => {
+        const videoRatio: number = windowWidth > 768 ? 0.5 : 1;
+        const width = windowWidth * videoRatio;
+        const height = width * (9 / 16);
+        videoPlayer.value.setSize(width, height);
+    }
+
     return {
         videoPlayer,
         videoURL,
@@ -39,5 +47,6 @@ export const useVideoStore = defineStore('video', (): VideoStore => {
         setPlayer,
         getPlayer,
         getCurrentVideoTime,
+        setPlayerSize
     }
 })
