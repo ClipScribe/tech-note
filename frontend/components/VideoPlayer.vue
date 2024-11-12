@@ -1,14 +1,15 @@
 <template>
-    <div class="video-container">
-      <div id="player"></div>
-    </div>
+  <section class="video-container">
+    <div id="player"></div>
+  </section>
 </template>
 
 <script setup lang="ts">
-import {onMounted, onBeforeUnmount} from "vue";
+import {onBeforeUnmount, onMounted} from "vue";
 import {useVideoStore} from "~/stores/videoStore";
 import {useCommentaryStore} from "~/stores/commentaryStore";
-import {v4 as uuidV4 } from "uuid";
+import {v4 as uuidV4} from "uuid";
+import video from "~/.output/server/chunks/build/video-B8Uh6aeL.mjs";
 
 definePageMeta({
   middleware: "check-video-url",
@@ -17,7 +18,7 @@ definePageMeta({
 const videoStore = useVideoStore();
 const commentaryStore = useCommentaryStore();
 
-const { startAutoDisplayCommentary, stopAutoDisplayCommentary } = useAutoDisplayCommentary();
+const {startAutoDisplayCommentary, stopAutoDisplayCommentary} = useAutoDisplayCommentary();
 
 const loadYouTubeAPI = () => {
   return new Promise<void>((resolve) => {
@@ -48,14 +49,13 @@ const initializePlayer = () => {
   if (!videoId) return;
 
   const videoPlayer = new window.YT.Player("player", {
-    height: "100%",
-    width: "100%",
     videoId: videoId,
     events: {
       onReady: onPlayerReady,
     },
   });
   videoStore.setPlayer(videoPlayer);
+
 };
 
 const onPlayerReady = async (event: any) => {
@@ -63,6 +63,7 @@ const onPlayerReady = async (event: any) => {
   // 해설 생성 시작
   await commentaryStore.generateCommentaries();
   // SSE 완료 후 실행해야 함
+  videoStore.setPlayerSize(window.innerWidth);
   startAutoDisplayCommentary();
 };
 
@@ -87,45 +88,30 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   stopAutoDisplayCommentary();
-  if(eventSource) {
+  if (eventSource) {
     console.log("eventSource close");
     eventSource.close()
   }
 });
 
+window.addEventListener('resize', () => videoStore.setPlayerSize(window.innerWidth));
+
 </script>
 
 <style scoped>
-.video-container {
-  flex: 1;
-  height: calc(100% - 90px);
-  margin-right: 450px;
-  padding-right: 450px;
-  background-color: black;
-  overflow-y: hidden;
-  position: fixed;
-  width:100%;
-
-}
-
-#player {
-  width: 100%;
-  height: 100%;
-}
 
 @media (max-width: 768px) {
   .video-container {
-    flex: 1;
-    width: 100%;
-    position: inherit;
-    height: 100%;
-    margin-right: 0;
-    padding-right: 0;
+    display: flex;
+    position: relative;
   }
 
   #player {
-    height: 40vw;
     width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
   }
 }
 </style>
