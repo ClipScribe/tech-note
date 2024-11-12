@@ -2,6 +2,7 @@ import asyncio
 
 from loguru import logger
 
+from app.openai_service.ExplanationEventHandler import ExplanationEventHandler
 from app.openai_service.IndexEventHandler import IndexEventHandler
 from app.openai_service.assistant_api_utils import *
 
@@ -26,13 +27,15 @@ async def create_explanations(dir_path, assistant, vector_store):
     logger.info("설명문 생성 시작 - 분할된 텍스트 파일들 병렬 처리")
 
     tasks = []  # 병렬 처리할 작업 목록
+    chunk_files = os.listdir(dir_path)
+    total_chunks = len(chunk_files)
 
     # 분할된 텍스트 파일들이 있는 디렉토리 내의 모든 파일을 반복 처리
-    for chunk_file_name in os.listdir(dir_path):
+    for chunk_index, chunk_file_name in enumerate(chunk_files):
         full_path = os.path.join(dir_path, chunk_file_name)
 
         # 비동기 태스크 생성
-        tasks.append(create_chunk_explanation(full_path, assistant))
+        tasks.append(create_chunk_explanation(full_path, assistant, chunk_index, total_chunks))
 
         # 모든 태스크를 병렬로 실행하고 각 태스크의 결과를 수집
         results = await asyncio.gather(*tasks)
@@ -45,16 +48,19 @@ async def create_explanations(dir_path, assistant, vector_store):
 
 
 # 각 파일에 대해 설명문을 생성하고 벡터 스토어에 업로드하는 비동기 함수
-async def create_chunk_explanation(chunk_file_path, assistant):
+async def create_chunk_explanation(chunk_file_path, assistant, request_id, chunk_index, total_chunks):
 
     thread, vector_store = initiate(chunk_file_path)
 
     # ExplanationEventHandler 생성
-    event_handler = ExplanationEventHandler(chunk_file_path=chunk_file_path, vector_store=vector_store)
+    event_handler = ExplanationEventHandler(vector_store=vector_store, request_id = request_id ,chunk_index=chunk_index)
 
     # 설명문 생성 시작
     logger.info(f"{chunk_file_path}에 대한 설명문 생성을 시작합니다.")
     run = await run_stream(assistant.id, thread.id, event_handler=event_handler)
+
+    # 진행 상황 로그
+    logger.info(f"설명문 생성 완료 ({chunk_index + 1}/{total_chunks})")
     return thread, vector_store
 
 

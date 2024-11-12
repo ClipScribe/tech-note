@@ -18,4 +18,4 @@ class IndexEventHandler(AssistantEventHandler):
         # 생성된 목차와 타임스탬프 정보를 파일로 저장
         with open(f"capstone_storage/{self.request_id}/index/index.txt", "w") as f:
             f.write(self.index_data)
-        logger.info("목차 데이터가 generated_index.txt에 저장되었습니다.")
+        logger.info("목차 데이터가 index.txt에 저장되었습니다.")
