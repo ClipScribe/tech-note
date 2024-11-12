@@ -4,7 +4,6 @@ import aiofiles
 import re
 from loguru import logger
 
-
 from app.domain.kafka_message.initialize_llm_request_message import InitiateRequestMessage
 from app.kafka.kafka_config import STT_RESULT_TOPIC, LLM_INITIALIZATION_TOPIC
 from app.transcription_service.youtube_caption_downloader import *
@@ -104,6 +103,13 @@ class MessageProcessor:
             # 자막을 분할
             chunks = self.chunk_text(caption_text)
             total_chunks = len(chunks)
+            initial_message = InitiateRequestMessage(
+                request_id=request_id,
+                total_chunk_num=total_chunks,
+                explanation_level = explanation_level,
+            )
+            await self.producer.send_message(initial_message, topic = LLM_INITIALIZATION_TOPIC)
+            logger.info("sent initialization message for request id: {}", request_id)
 
             initial_message = InitiateRequestMessage(
                 request_id=request_id,
@@ -122,7 +128,6 @@ class MessageProcessor:
                     transcription_text=chunk,
                 )
                 await self.producer.send_message(chunk_message, topic=STT_RESULT_TOPIC)
-
                 logger.info("Sent chunk {} for Video ID: {}", chunk_id, video_id)
 
             logger.info("Completed processing for Video ID: {}", video_id)
@@ -131,4 +136,3 @@ class MessageProcessor:
             logger.error("ValueError: {}", ve)
         except Exception as e:
             logger.exception("An unexpected error occurred while processing the message: {}", e)
-

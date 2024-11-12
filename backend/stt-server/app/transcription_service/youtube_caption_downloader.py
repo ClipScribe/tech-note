@@ -24,7 +24,6 @@ async def get_transcript_list(video_id):
                 'is_generated': transcript.is_generated,
                 'language_code': transcript.language_code
             })
-
         logger.info("Possible captions: {}", captions)
         return captions
 
@@ -47,7 +46,6 @@ async def download_transcript(video_id, language_code='en', save_dir='transcript
 
         # YouTubeTranscriptApi는 동기 함수이므로 asyncio.to_thread로 비동기로 실행
         transcript_list = await asyncio.to_thread(YouTubeTranscriptApi.list_transcripts, video_id)
-
         selected_transcript = None
 
         # 수동 생성된 자막을 우선 선택
@@ -86,5 +84,4 @@ async def download_transcript(video_id, language_code='en', save_dir='transcript
 
     except Exception as e:
         logger.exception("An error occurred while downloading the transcript: {}", e)
-
         return None
