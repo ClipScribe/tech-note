@@ -74,8 +74,10 @@ const handleSubmit = () => {
   if (selectedLevel.value && validateYoutubeUrl(youtubeUrl.value)) {
     const trimmedUrl = youtubeUrl.value.split("&")[0];
     videoStore.setVideoURL(trimmedUrl);
-    // 여기서 서버로
-    console.log(selectedLevel.value, trimmedUrl)
+    //
+
+
+    console.log(selectedLevel.value, trimmedUrl);
 
     router.push("/video");
   }

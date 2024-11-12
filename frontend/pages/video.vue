@@ -1,7 +1,7 @@
 <template>
   <div class="video-page">
-    <VideoPlayer/>
-    <CommentarySidebar/>
+    <video-player/>
+    <commentary-note/>
   </div>
 </template>
 
