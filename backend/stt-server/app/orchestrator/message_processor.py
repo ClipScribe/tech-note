@@ -111,6 +111,15 @@ class MessageProcessor:
             await self.producer.send_message(initial_message, topic = LLM_INITIALIZATION_TOPIC)
             logger.info("sent initialization message for request id: {}", request_id)
 
+            initial_message = InitiateRequestMessage(
+                request_id=request_id,
+                total_chunk_num=total_chunks,
+                explanation_level = explanation_level,
+            )
+            await self.producer.send_message(initial_message, topic = LLM_INITIALIZATION_TOPIC)
+            logger.info("sent initialization message for request id: {}", request_id)
+
+
             # chunk_list를 순회하면서 메시지를 만들고 발행
             for chunk_id, chunk in enumerate(chunks):
                 chunk_message = TranscriptionResultMessage(
