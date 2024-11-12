@@ -2,6 +2,7 @@ import asyncio
 
 from loguru import logger
 
+from app.openai_service.EnhancedExplanationEventHandler import EnhancedExplanationEventHandler
 from app.openai_service.ExplanationEventHandler import ExplanationEventHandler
 from app.openai_service.FeedbackEventHandler import FeedbackEventHandler
 from app.openai_service.IndexEventHandler import IndexEventHandler
