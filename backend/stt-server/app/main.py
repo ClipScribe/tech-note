@@ -1,35 +1,60 @@
 # app/main.py
-
+import uvicorn
 import asyncio
+import json
+
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from loguru import logger
+from aiokafka import AIOKafkaConsumer
 
-from app.kafka.consumers.kafka_consumer import consume
+from app.kafka.kafka_config import *
+
+from app.kafka.consumers.kafka_consumer import consume, consume_request
 from app.kafka.producers import kafka_producer_manager
+from app.kafka.producers.kafka_producer_manager import AsyncSTTResultProducer
+from app.orchestrator.message_processor import MessageProcessor
 
 # 환경 변수 로드
 load_dotenv()
 
 async def lifespan(app: FastAPI):
-    # 로깅 초기화 (이미 loguru로 설정되었으므로 별도의 설정은 필요 없음)
-    logger.info("Starting FastAPI application with Kafka consumer.")
+    logger.info("서버를 시작합니다.")
+    consumer = AIOKafkaConsumer(
+        VIDEO_REQUEST_TOPIC,
+        bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
+        auto_offset_reset='earliest',
+        enable_auto_commit=True,
+        group_id='transcription-group',
+        value_deserializer=lambda x: json.loads(x.decode('utf-8'))
+    )
+    producer = AsyncSTTResultProducer(STT_RESULT_TOPIC)
 
-    # 백그라운드 태스크로 Kafka 소비 시작
-    consumer_task = asyncio.create_task(consume())
+    logger.info("consumer, producer start")
+    await consumer.start()
+    await producer.start()
+
+    message_processor = MessageProcessor(producer)
+
+    request_consumer_task = asyncio.create_task(consume_request(consumer,message_processor))
 
     try:
         yield
     finally:
         # 애플리케이션 종료 시 Kafka 소비자 중지
         logger.info("Shutting down FastAPI application. Cancelling Kafka consumer task.")
-        consumer_task.cancel()
+        request_consumer_task.cancel()
+        await producer.stop()
+        await consumer.stop()
         try:
-            await consumer_task
+            await request_consumer_task
         except asyncio.CancelledError:
             logger.info("Kafka consumer task cancelled successfully.")
 
 app = FastAPI(lifespan=lifespan)
+
+if __name__ == "__main__":
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
 
 @app.get("/")
 def read_root():

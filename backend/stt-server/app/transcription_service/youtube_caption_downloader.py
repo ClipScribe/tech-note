@@ -16,7 +16,6 @@ async def get_transcript_list(video_id):
     try:
         # YouTubeTranscriptApi는 동기 함수이므로 asyncio.to_thread로 비동기로 실행
         transcript_list = await asyncio.to_thread(YouTubeTranscriptApi.list_transcripts, video_id)
-
         captions = []
 
         for transcript in transcript_list:
