@@ -1,3 +1,4 @@
+
 import asyncio
 import aiofiles
 import re
@@ -73,6 +74,7 @@ class MessageProcessor:
         youtube_url = message.get('youtube_url')
         request_id = message.get('request_id')
         explanation_level = message.get('explanation_level')
+
         logger.info("Processing message: {}", message)
 
         if not youtube_url:
