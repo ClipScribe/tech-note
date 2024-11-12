@@ -12,6 +12,7 @@ from app.kafka.kafka_config import *
 
 from app.kafka.consumers.kafka_consumer import consume, consume_request
 from app.kafka.producers import kafka_producer_manager
+
 from app.kafka.producers.kafka_producer_manager import AsyncProducer
 from app.orchestrator.message_processor import MessageProcessor
 
@@ -28,7 +29,9 @@ async def lifespan(app: FastAPI):
         group_id='transcription-group',
         value_deserializer=lambda x: json.loads(x.decode('utf-8'))
     )
+
     producer = AsyncProducer()
+
 
     logger.info("consumer, producer start")
     await consumer.start()

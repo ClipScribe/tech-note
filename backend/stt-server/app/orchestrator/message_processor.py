@@ -1,7 +1,9 @@
+
 import asyncio
 import aiofiles
 import re
 from loguru import logger
+
 
 from app.domain.kafka_message.initialize_llm_request_message import InitiateRequestMessage
 from app.kafka.kafka_config import STT_RESULT_TOPIC, LLM_INITIALIZATION_TOPIC
@@ -73,6 +75,7 @@ class MessageProcessor:
         youtube_url = message.get('youtube_url')
         request_id = message.get('request_id')
         explanation_level = message.get('explanation_level')
+
         logger.info("Processing message: {}", message)
 
         if not youtube_url:
@@ -101,6 +104,7 @@ class MessageProcessor:
             # 자막을 분할
             chunks = self.chunk_text(caption_text)
             total_chunks = len(chunks)
+
             initial_message = InitiateRequestMessage(
                 request_id=request_id,
                 total_chunk_num=total_chunks,
@@ -108,6 +112,7 @@ class MessageProcessor:
             )
             await self.producer.send_message(initial_message, topic = LLM_INITIALIZATION_TOPIC)
             logger.info("sent initialization message for request id: {}", request_id)
+
 
             # chunk_list를 순회하면서 메시지를 만들고 발행
             for chunk_id, chunk in enumerate(chunks):
@@ -117,6 +122,7 @@ class MessageProcessor:
                     transcription_text=chunk,
                 )
                 await self.producer.send_message(chunk_message, topic=STT_RESULT_TOPIC)
+
                 logger.info("Sent chunk {} for Video ID: {}", chunk_id, video_id)
 
             logger.info("Completed processing for Video ID: {}", video_id)
@@ -125,3 +131,4 @@ class MessageProcessor:
             logger.error("ValueError: {}", ve)
         except Exception as e:
             logger.exception("An unexpected error occurred while processing the message: {}", e)
+
