@@ -3,6 +3,10 @@ import asyncio
 import aiofiles
 import re
 from loguru import logger
+
+
+from app.domain.kafka_message.initialize_llm_request_message import InitiateRequestMessage
+from app.kafka.kafka_config import STT_RESULT_TOPIC, LLM_INITIALIZATION_TOPIC
 from app.transcription_service.youtube_caption_downloader import *
 from app.domain.kafka_message.chunk_transcription_result import TranscriptionResultMessage
 
@@ -70,6 +74,8 @@ class MessageProcessor:
         """
         youtube_url = message.get('youtube_url')
         request_id = message.get('request_id')
+        explanation_level = message.get('explanation_level')
+
         logger.info("Processing message: {}", message)
 
         if not youtube_url:
@@ -99,6 +105,15 @@ class MessageProcessor:
             chunks = self.chunk_text(caption_text)
             total_chunks = len(chunks)
 
+            initial_message = InitiateRequestMessage(
+                request_id=request_id,
+                total_chunk_num=total_chunks,
+                explanation_level = explanation_level,
+            )
+            await self.producer.send_message(initial_message, topic = LLM_INITIALIZATION_TOPIC)
+            logger.info("sent initialization message for request id: {}", request_id)
+
+
             # chunk_list를 순회하면서 메시지를 만들고 발행
             for chunk_id, chunk in enumerate(chunks):
                 chunk_message = TranscriptionResultMessage(
@@ -106,7 +121,8 @@ class MessageProcessor:
                     chunk_id=chunk_id,
                     transcription_text=chunk,
                 )
-                await self.producer.send_stt_result(chunk_message)
+                await self.producer.send_message(chunk_message, topic=STT_RESULT_TOPIC)
+
                 logger.info("Sent chunk {} for Video ID: {}", chunk_id, video_id)
 
             logger.info("Completed processing for Video ID: {}", video_id)
