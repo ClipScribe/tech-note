@@ -7,11 +7,30 @@
 
 <script setup lang="ts">
 import VideoPlayer from "~/components/VideoPlayer.vue";
+import {useTabSync} from "~/composables/useTabSync";
+
+const {syncTabs} = useTabSync();
 
 definePageMeta({
   middleware: "check-video-url",
 });
 
+const handleBeforeUnload = () => {
+  if (window.location.pathname.includes('/video')) {
+    localStorage.setItem('videoInProgress', 'false');
+  }
+};
+
+onMounted(() => {
+  localStorage.setItem('videoInProgress', 'true');
+  syncTabs();
+  window.addEventListener('beforeunload', handleBeforeUnload);
+});
+
+onBeforeUnmount(() => {
+  localStorage.setItem('videoInProgress', 'false');
+  window.removeEventListener('beforeunload', handleBeforeUnload);
+});
 </script>
 
 <style scoped>

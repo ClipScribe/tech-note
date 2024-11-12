@@ -2,6 +2,7 @@
   <section class="video-container">
     <div id="player"></div>
   </section>
+
 </template>
 
 <script setup lang="ts">
@@ -9,7 +10,6 @@ import {onBeforeUnmount, onMounted} from "vue";
 import {useVideoStore} from "~/stores/videoStore";
 import {useCommentaryStore} from "~/stores/commentaryStore";
 import {v4 as uuidV4} from "uuid";
-import video from "~/.output/server/chunks/build/video-B8Uh6aeL.mjs";
 
 definePageMeta({
   middleware: "check-video-url",
