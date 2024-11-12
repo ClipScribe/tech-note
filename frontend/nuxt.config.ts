@@ -1,4 +1,9 @@
 export default defineNuxtConfig({
+    app: {
+        head: {
+            title: "정확한 영상해설 | TechNote"
+        }
+    },
     compatibilityDate: '2024-04-03',
     devtools: { enabled: true },
     modules: [
