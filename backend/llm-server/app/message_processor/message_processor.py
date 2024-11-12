@@ -1,6 +1,8 @@
 import asyncio
 
 from loguru import logger
+
+from app.openai_service.IndexEventHandler import IndexEventHandler
 from app.openai_service.assistant_api_utils import *
 
 async def initiate(file_path:str):
@@ -14,10 +16,10 @@ async def initiate(file_path:str):
     logger.info(f"thread 생성: {thread.id}")
     return thread, vector_store
 
-async def create_indices(thread, assistant):
+async def create_indices(thread, assistant, request_id):
     logger.info("목차 생성 시작")
     logger.info(f"run 시작 for thread_id = {thread.id}")
-    run = await run_stream(assistant.id, thread.id, event_handler = IndexEventHandler())
+    run = await run_stream(assistant.id, thread.id, event_handler = IndexEventHandler(request_id))
 
 # 설명문 생성 함수 (분할된 텍스트 파일들을 병렬 처리)
 async def create_explanations(dir_path, assistant, vector_store):
