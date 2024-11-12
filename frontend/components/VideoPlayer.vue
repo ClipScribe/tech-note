@@ -1,6 +1,18 @@
 <template>
   <section class="video-container">
-    <div id="player"></div>
+    <div v-if="loading" class="v-Loading q-pa-md full-width fixed-top">
+      <q-card flat style="max-width: 100%;">
+        <q-skeleton style="min-height: 33vh" square />
+
+        <q-card-section>
+          <q-skeleton type="text" height="35px"  class="text-subtitle1" />
+          <q-skeleton type="text" height="35px"  width="80%" class="text-subtitle1" />
+          <q-skeleton type="text" height="35px" class="text-caption" />
+        </q-card-section>
+      </q-card>
+    </div>
+
+    <div  id="player" class="v-Player"></div>
   </section>
 
 </template>
@@ -17,6 +29,9 @@ definePageMeta({
 
 const videoStore = useVideoStore();
 const commentaryStore = useCommentaryStore();
+
+// 로딩 상태를 추적하는 ref
+const loading = ref<boolean>(true);
 
 const {startAutoDisplayCommentary, stopAutoDisplayCommentary} = useAutoDisplayCommentary();
 
@@ -55,15 +70,16 @@ const initializePlayer = () => {
     },
   });
   videoStore.setPlayer(videoPlayer);
-
+  videoStore.setPlayerSize(window.innerWidth);
 };
 
 const onPlayerReady = async (event: any) => {
   event.target.playVideo();
   // 해설 생성 시작
+  loading.value = false;
   await commentaryStore.generateCommentaries();
   // SSE 완료 후 실행해야 함
-  videoStore.setPlayerSize(window.innerWidth);
+  // 비디오 로드가 끝났으므로 로딩 상태를 false로 설정
   startAutoDisplayCommentary();
 };
 
@@ -99,6 +115,19 @@ window.addEventListener('resize', () => videoStore.setPlayerSize(window.innerWid
 </script>
 
 <style scoped>
+.video-container {
+  position: relative;
+  height: 100%;
+  min-width: 50%;
+  border:1px solid red;
+}
+.v-Loading {
+  width: 100%;
+  background-color: white;
+  height: 100%;
+  position: absolute;
+  z-index: 1001;
+}
 
 @media (max-width: 768px) {
   .video-container {
