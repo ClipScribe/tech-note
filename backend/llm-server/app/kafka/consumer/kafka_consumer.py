@@ -7,7 +7,7 @@ from app.message_processor.message_processor import *
 from app.text_utils.text_utils import TextMergerToFile
 
 
-async def consume_initial_messages(consumer, initial_messages):
+async def consume_initial_requests(consumer, initial_messages):
     """
     초기 메시지를 소비하고 request_id별로 정보를 저장하는 함수.
     요청 처리가 완료되면 해당 request_id의 정보를 삭제합니다.
