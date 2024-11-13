@@ -1,5 +1,4 @@
 import {type Ref, ref} from "vue";
-import type {ReturnType} from "birpc";
 
 export interface VideoStore {
     videoPlayer: Ref<any>;
@@ -15,7 +14,6 @@ export interface VideoStore {
 export const useVideoStore = defineStore('video', (): VideoStore => {
     const videoPlayer = ref<any> (null);
     const videoURL = ref<string>();
-    const currentVideoTime = ref<number>(0);
 
     const setPlayer = (player: any) => {
         videoPlayer.value = player;
@@ -26,6 +24,7 @@ export const useVideoStore = defineStore('video', (): VideoStore => {
     const setVideoURL = (url: string) : void => {
         videoURL.value = url;
     }
+
     const getVideoURL = (): string => videoURL.value as string
 
     const getCurrentVideoTime = () :number => {
@@ -38,7 +37,6 @@ export const useVideoStore = defineStore('video', (): VideoStore => {
         const height = width * (9 / 16);
         videoPlayer.value.setSize(width, height);
     }
-
     return {
         videoPlayer,
         videoURL,

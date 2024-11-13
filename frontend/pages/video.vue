@@ -12,11 +12,11 @@ import {useTabSync} from "~/composables/useTabSync";
 const {syncTabs} = useTabSync();
 
 definePageMeta({
-  middleware: "check-video-url",
+  middleware: "check-video-url"
 });
 
 const handleBeforeUnload = () => {
-  if (window.location.pathname.includes('/video')) {
+  if (window.location.pathname.includes('/note')) {
     localStorage.setItem('videoInProgress', 'false');
   }
 };

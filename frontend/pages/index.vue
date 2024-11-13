@@ -6,7 +6,6 @@
 </template>
 
 <script setup lang="ts">
-
 import MainTitle from "~/components/MainTitle.vue";
 import MainInput from "~/components/MainInput.vue";
 </script>
