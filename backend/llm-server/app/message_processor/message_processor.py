@@ -1,11 +1,9 @@
 import asyncio
-import os
 
-
-from app.openai_service.EnhancedExplanationEventHandler import EnhancedExplanationEventHandler
-from app.openai_service.ExplanationEventHandler import ExplanationEventHandler
-from app.openai_service.FeedbackEventHandler import FeedbackEventHandler
-from app.openai_service.IndexEventHandler import IndexEventHandler
+from app.openai_service.event_handler.enhandced_event_handler import EnhancedExplanationEventHandler
+from app.openai_service.event_handler.explanation_event_handler import ExplanationEventHandler
+from app.openai_service.event_handler.feedback_event_handler import FeedbackEventHandler
+from app.openai_service.event_handler.index_event_handler import IndexEventHandler
 from app.openai_service.assistant_api_utils import *
 
 # 로그 형식 통일 설정
