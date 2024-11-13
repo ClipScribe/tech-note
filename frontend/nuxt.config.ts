@@ -23,4 +23,9 @@ export default defineNuxtConfig({
             'Noto+Sans': [400], // 필요한 스타일 추가
         }
     },
+    runtimeConfig: {
+        public: {
+            apiBaseUrl: process.env.API_BASE_URL || 'http://localhost:8080'
+        }
+    }
 })

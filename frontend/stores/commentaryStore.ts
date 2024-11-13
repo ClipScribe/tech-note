@@ -2,7 +2,6 @@ import {useCreateHtml} from '~/composables/useCreateHtml'
 import type {Ref} from "vue";
 import type {Commentary} from "~/types/commentary";
 import {useVideoStore} from "~/stores/videoStore";
-import {target} from "@vue/devtools-shared";
 
 const MARKDOWN_TEXT = `
 ### Revisited: Dining Philosopher
@@ -61,6 +60,7 @@ export const useCommentaryStore = defineStore('commentary', (): CommentaryStore 
      /*
         SSE 로 해설을 받으면 totalCommentaries에 추가한다.
      */
+
     const addCommentary = async (startTime: number, content: string):Promise<void> => {
         const htmlContent = await createHtmlFromCommentary(startTime, content);
         const commentary = createCommentary(startTime, htmlContent);
