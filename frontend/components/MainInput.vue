@@ -34,18 +34,15 @@
 </template>
 
 <script setup lang="ts">
-
 import {ref} from 'vue';
-import {useRouter} from "vue-router";
 import {useVideoStore} from "~/stores/videoStore";
 import {useNoteStore} from "~/stores/noteStore";
 import {KnowledgeLevel} from "~/types/commentary";
+import {navigateTo} from "#app";
 
 const youtubeUrl = ref("");
-const router = useRouter();
 const videoStore = useVideoStore();
 const noteStore = useNoteStore();
-
 
 const selectedLevel = ref<KnowledgeLevel>(KnowledgeLevel.BEGINNER);
 const checkboxStates = reactive({
@@ -60,16 +57,12 @@ const knowledgeLevels = [
   {value: KnowledgeLevel.EXPERT, label: "전문가에요"}
 ];
 
-const selectCheckbox = (checkedLevel: KnowledgeLevel) => {
+const selectCheckbox = (checkedLevel: KnowledgeLevel): void => {
   selectedLevel.value = checkedLevel;
-  // selectedLevel 이 아닌 level 의 status 를 false 로
   for (let i = 0; i < knowledgeLevels.length; i++) {
     checkboxStates[knowledgeLevels[i].value] = knowledgeLevels[i].value == checkedLevel;
   }
 };
-
-
-
 
 const validateYoutubeUrl = (val: string): boolean => {
   const pattern = /^https:\/\/www\.youtube\.com\/watch\?v=/;
@@ -81,14 +74,14 @@ const extractVideoId = (url: string): string | null => {
   return urlParams.get('v');
 }
 
-const handleSubmit = async () => {
+const handleSubmit = async (): Promise<void> => {
   if (selectedLevel.value && validateYoutubeUrl(youtubeUrl.value)) {
     const trimmedUrl = youtubeUrl.value.split("&")[0];
     const videoId = extractVideoId(trimmedUrl) as string;
     const userLevel = selectedLevel.value;
     await noteStore.createNote(videoId, userLevel);
-    videoStore.setVideoURL(trimmedUrl);
-    await router.push("/video");
+    videoStore.setVideoId(videoId);
+    navigateTo("/video");
   }
 };
 </script>
