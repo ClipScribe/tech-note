@@ -21,7 +21,7 @@
 import {onBeforeUnmount, onMounted} from "vue";
 import {useVideoStore} from "~/stores/videoStore";
 import {useCommentaryStore} from "~/stores/commentaryStore";
-import {v4 as uuidV4} from "uuid";
+import { v4 as uuidv4 } from "uuid";
 
 definePageMeta({
   middleware: "check-video-url",
@@ -30,12 +30,10 @@ definePageMeta({
 const videoStore = useVideoStore();
 const commentaryStore = useCommentaryStore();
 
-// 로딩 상태를 추적하는 ref
 const loading = ref<boolean>(true);
-
 const {startAutoDisplayCommentary, stopAutoDisplayCommentary} = useAutoDisplayCommentary();
 
-const loadYouTubeAPI = () => {
+const loadYouTubeAPI = (): Promise<void> => {
   return new Promise<void>((resolve) => {
     if (window.YT && window.YT.Player) {
       resolve();
@@ -52,53 +50,48 @@ const loadYouTubeAPI = () => {
   });
 };
 
-const getVideoIdFromUrl = (url: string): string | null => {
-  const match = url.match(
-      /^https:\/\/www\.youtube\.com\/watch\?v=([\w-]{11})$/
-  );
-  return match ? match[1] : null;
-};
-
-const initializePlayer = () => {
-  const videoId = getVideoIdFromUrl(videoStore.getVideoURL());
-  if (!videoId) return;
-
+const initializePlayer = (): void => {
+  const videoId = videoStore.getVideoId();
   const videoPlayer = new window.YT.Player("player", {
-    videoId: videoId,
+    videoId,
     events: {
       onReady: onPlayerReady,
     },
   });
+
   videoStore.setPlayer(videoPlayer);
   videoStore.setPlayerSize(window.innerWidth);
 };
 
 const onPlayerReady = async (event: any) => {
   event.target.playVideo();
-  // 해설 생성 시작
   loading.value = false;
-  await commentaryStore.generateCommentaries();
-  // SSE 완료 후 실행해야 함
-  // 비디오 로드가 끝났으므로 로딩 상태를 false로 설정
-  startAutoDisplayCommentary();
 };
 
-// 서버와의 SSE 연결을 관리할 변수
 let eventSource: EventSource;
+
 
 onMounted(async () => {
   await loadYouTubeAPI();
   initializePlayer();
 
-  const requestId: String = uuidV4();
-  eventSource = new EventSource(`http://localhost:8080/sse/connect/${requestId}`);
+  const videoId = videoStore.getVideoId();
+  const clientId = uuidv4();
+  eventSource = new EventSource(`http://localhost:8080/sse/connect/${videoId}?clientId=${clientId}`);
+  eventSource.addEventListener("connect", () => {
+    console.log("서버와 연결")
+  })
 
-  eventSource.onmessage = (event) => {
-    console.log("Received message:", event.data);
-  };
+  eventSource.addEventListener("commentary", async (e: any) => {
+    const data = JSON.parse(e.data);
+    const { startTime, content } = data;
+    await commentaryStore.addCommentary(startTime, content);
+  });
 
   eventSource.onerror = (error) => {
     console.error("Error receiving SSE:", error);
+
+
   };
 });
 

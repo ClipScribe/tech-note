@@ -8,6 +8,7 @@
 <script setup lang="ts">
 import VideoPlayer from "~/components/VideoPlayer.vue";
 import {useTabSync} from "~/composables/useTabSync";
+import {useVideoStore} from "~/stores/videoStore";
 
 const {syncTabs} = useTabSync();
 
@@ -15,9 +16,12 @@ definePageMeta({
   middleware: "check-video-url"
 });
 
+const videoStore = useVideoStore();
+
 const handleBeforeUnload = () => {
   if (window.location.pathname.includes('/note')) {
     localStorage.setItem('videoInProgress', 'false');
+    videoStore.setVideoId('');
   }
 };
 
