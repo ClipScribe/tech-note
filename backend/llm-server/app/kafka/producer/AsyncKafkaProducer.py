@@ -33,7 +33,7 @@ class AsyncKafkaProducer:
         """
         try:
             # 메시지 전송
-            await self.producer.send_and_wait(topic, message.encode('utf-8'), partition=partition)
+            await self.producer.send_and_wait(topic, message, partition=partition)
             logging.info(f"Sent message to topic '{topic}' with message: {message}")
         except Exception as e:
             logging.error(f"Failed to send message to topic '{topic}': {e}")
