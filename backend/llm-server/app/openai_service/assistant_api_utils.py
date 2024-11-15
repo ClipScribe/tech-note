@@ -4,6 +4,7 @@ from openai import OpenAI
 from openai import AssistantEventHandler
 
 from app.domain.dto.combined_segment import CombinedSegment
+
 from app.openai_service.assistant_video_explainer_config import name, instructions, model
 from loguru import logger
 

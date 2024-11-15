@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# 기본 URL 및 임의의 YouTube video IDs 배열 설정
+# 기본 URL 및 임의의 YouTube note IDs 배열 설정
 base_url="http://localhost:8080/video/link"
 video_ids=("dQw4w9WgXcQ" "J---aiyznGQ" "M7lc1UVf-VE" "eVTXPUF4Oz4" "9bZkp7q19f0" "3JZ_D3ELwOQ" "kXYiU_JCYtU" "hTWKbfoikeg" "fJ9rUzIMcZQ" "ioNng23DkIM")
 
