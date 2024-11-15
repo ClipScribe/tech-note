@@ -4,7 +4,7 @@ import DOMPurify from "dompurify";
 import "highlight.js/styles/github-dark.css";
 
 export const useCreateHtml = () => {
-    const createHtmlFromCommentary = async (startTime: number, content: string): Promise<string> => {
+    const createHtmlFromCommentary = async (content: string): Promise<string> => {
         const renderer = new Renderer();
         renderer.code = highlightCode;
         const rawHtml = await marked(content, { renderer })

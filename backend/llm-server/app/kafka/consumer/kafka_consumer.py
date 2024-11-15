@@ -1,3 +1,4 @@
+
 import time
 import traceback
 
@@ -6,8 +7,10 @@ from loguru import logger
 from app.domain.kafka_message.initiate_request_message import InitiateRequestMessage
 from app.domain.kafka_message.stt_chunk_result_message import STTChunkResultMessage
 
+
 from app.message_processor.message_processor import *
 from app.text_utils.text_utils import TextMergerToFile
+
 
 
 async def consume_initial_requests(consumer, producer ,initial_messages, assistants, processors):
@@ -20,6 +23,7 @@ async def consume_initial_requests(consumer, producer ,initial_messages, assista
         initial_messages (dict): 초기 메시지를 저장하는 딕셔너리, key는 request_id
         assistants: assitant dic-> beginner, intermediate, expert
         processors: request_id별 processor를 생성해 stt_result consumer에서 사용하기 위한 목적
+
     """
     logger.info("초기 메시지를 소비하기 시작합니다.")
 
@@ -62,6 +66,7 @@ async def consume_initial_requests(consumer, producer ,initial_messages, assista
                     )
                     processors[request_id] = message_processor
 
+
     except Exception as e:
         logger.error(f"초기 메시지 소비 중 오류 발생: {e}")
     finally:
@@ -90,8 +95,6 @@ async def consume_stt_results(consumer, initial_messages, processors):
             request_id = stt_result.request_id
             chunk_id = stt_result.chunk_id
             transcription_text = stt_result.transcription_text
-
-            message_processor = processors[request_id]
 
             # initial_messages에 request_id가 없다면 새로 초기화
             if request_id not in initial_messages:
@@ -134,6 +137,7 @@ async def consume_stt_results(consumer, initial_messages, processors):
                 await message_processor.create_feedbacks_for_explanations(chunk_resource_list)
                 #목차별 피드백 반영 설명문 생성
                 await message_processor.create_enhanced_explanations(chunk_resource_list)
+
 
 
     except Exception as e:

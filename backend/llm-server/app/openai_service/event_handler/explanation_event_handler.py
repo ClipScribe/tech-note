@@ -1,3 +1,4 @@
+
 import os
 
 import asyncio
@@ -44,3 +45,4 @@ class ExplanationEventHandler(AssistantEventHandler):
         # 생성된 설명문 파일을 벡터 스토어에 업로드 (추가 기능, 비활성화 상태)
         # asyncio.run(add_file_to_vector_store(self.vector_store.id, explanation_file_path))
         # logger.info(f"{self.chunk_index}번째 설명문이 벡터 스토어에 업로드되었습니다.")
+

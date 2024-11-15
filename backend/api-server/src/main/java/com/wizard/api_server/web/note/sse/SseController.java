@@ -1,4 +1,4 @@
-package com.wizard.api_server.web.sse;
+package com.wizard.api_server.web.note.sse;
 
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;

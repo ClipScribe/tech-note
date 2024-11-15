@@ -1,3 +1,4 @@
+
 import asyncio
 import json
 import os
@@ -61,5 +62,3 @@ class IndexEventHandler(AssistantEventHandler):
             logger.info(f"Kafka에 메시지가 전송되었습니다 request_id: {self.request_id}")
         except Exception as e:
             logger.error(f"Kafka에 메시지를 전송하는 중 오류가 발생했습니다: {e}")
-
-

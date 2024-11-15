@@ -1,5 +1,6 @@
 import asyncio
 
+
 from app.openai_service.event_handler.enhanced_event_handler import EnhancedExplanationEventHandler
 from app.openai_service.event_handler.explanation_event_handler import ExplanationEventHandler
 from app.openai_service.event_handler.feedback_event_handler import FeedbackEventHandler
@@ -91,10 +92,12 @@ class MessageProcessor:
 
     async def create_indices(self, thread):
         logger.info(f"목차 생성 시작 | Thread ID: {thread.id}")
+
         instruction = load_create_index_prompt(self.request_id)
         text = await read_text_file("capstone_storage/test_request_123/original_test_request_123.txt")
         instruction+=text
         run = await run_stream(self.assistant.id, thread.id, event_handler=IndexEventHandler(self.request_id, producer=self.producer), instructions=instruction)
+
 
     async def create_explanations(self, dir_path):
         logger.info("설명문 생성 시작 - 분할된 텍스트 파일들 병렬 처리")
@@ -169,6 +172,7 @@ class MessageProcessor:
         await asyncio.gather(*tasks)
         logger.info("모든 피드백 반영 설명문 생성 작업이 완료되었습니다.")
 
+
     async def create_enhanced_chunk_explanation(self, thread, chunk_index):
         enhanced_explanation_event_handler = EnhancedExplanationEventHandler(
             thread_id=thread.id, request_id=self.request_id, chunk_index=chunk_index, kafka_producer=self.producer
@@ -183,3 +187,4 @@ class MessageProcessor:
         await run_stream(self.assistant.id, thread.id, event_handler=enhanced_explanation_event_handler, instructions=instructions)
 
         logger.info(f"피드백 반영 설명문 생성 완료 | Thread ID: {thread.id} | 청크: {chunk_index}/{self.total_chunks}")
+
