@@ -1,10 +1,11 @@
 import os
 from dotenv import load_dotenv
 from openai import OpenAI
+from openai import AssistantEventHandler
 
 from app.domain.dto.combined_segment import CombinedSegment
-from app.open_ai.api_event_handler import EventHandler
-from app.open_ai.assistant_video_explainer_config import name, instructions, model
+from app.openai_service.api_event_handler import EventHandler
+from app.openai_service.assistant_video_explainer_config import name, instructions, model
 from loguru import logger
 
 # 환경 변수 로드
@@ -58,7 +59,7 @@ async def add_file_to_vector_store(vector_store_id, file_path):
         vector_store_id=vector_store_id, files=file_stream
     )
     logger.success("file upload완료")
-    return file_batch #여기서
+    return file_batch
 
 # Assistant 스레드 실행 함수
 async def run_assistant_thread(assistant_id: str, thread_id: str):
@@ -81,7 +82,7 @@ async def create_thread_with_vector_store(vector_store_id: str):
     )
 
 # 스트리밍 실행 함수
-async def run_stream(assistant_id: str, thread_id: str, event_handler: EventHandler):
+async def run_stream(assistant_id: str, thread_id: str, event_handler: AssistantEventHandler):
     logger.info("스트리밍 시작.")
     with client.beta.threads.runs.stream(
         thread_id=thread_id,
