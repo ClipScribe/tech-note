@@ -1,4 +1,9 @@
 export default defineNuxtConfig({
+    app: {
+        head: {
+            title: "정확한 영상해설 | TechNote"
+        }
+    },
     compatibilityDate: '2024-04-03',
     devtools: { enabled: true },
     modules: [
@@ -18,4 +23,9 @@ export default defineNuxtConfig({
             'Noto+Sans': [400], // 필요한 스타일 추가
         }
     },
+    runtimeConfig: {
+        public: {
+            apiBaseUrl: process.env.API_BASE_URL || 'http://localhost:8080'
+        }
+    }
 })

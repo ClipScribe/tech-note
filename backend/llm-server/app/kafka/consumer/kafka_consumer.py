@@ -1,3 +1,4 @@
+
 import time
 import traceback
 
@@ -8,6 +9,9 @@ from app.domain.kafka_message.stt_chunk_result_message import STTChunkResultMess
 
 from app.message_processor.message_processor import *
 from app.text_utils.text_utils import TextMergerToFile
+from app.message_processor.message_processor import *
+from app.text_utils.text_utils import TextMergerToFile
+
 
 
 async def consume_initial_requests(consumer, producer ,initial_messages, assistants, processors):
