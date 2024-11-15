@@ -183,3 +183,4 @@ class MessageProcessor:
         await run_stream(self.assistant.id, thread.id, event_handler=enhanced_explanation_event_handler, instructions=instructions)
 
         logger.info(f"피드백 반영 설명문 생성 완료 | Thread ID: {thread.id} | 청크: {chunk_index}/{self.total_chunks}")
+

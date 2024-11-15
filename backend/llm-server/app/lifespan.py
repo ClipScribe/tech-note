@@ -41,6 +41,7 @@ async def lifespan(app):
     request_consumer_task = asyncio.create_task(consume_initial_requests(initial_request_consumer, initial_messages=initial_messages, assistants=assistants, processors=processors))
     stt_result_consumer_task = asyncio.create_task(consume_stt_results(stt_result_consumer, initial_messages=initial_messages, processors=processors))
 
+
     try:
         yield
     finally:
@@ -71,6 +72,7 @@ from app.kafka.consumer.kafka_consumer import *
 from app.kafka.kafka_config import *
 from app.kafka.producer.AsyncKafkaProducer import AsyncKafkaProducer
 from app.openai_service.assistants_config import *
+
 
 
 async def consume_initial_requests(consumer,producer ,initial_messages, assistants, processors, stt_retry_queue):
@@ -234,3 +236,4 @@ async def initialize_kafka_and_assistants():
 
     assistants = {'beginner': beginner_assistant, 'intermediate': intermediate_assistant, 'expert': expert_assistant}
     return initial_request_consumer, stt_result_consumer, producer, assistants
+

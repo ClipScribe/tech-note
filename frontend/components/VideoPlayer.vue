@@ -1,14 +1,27 @@
 <template>
-    <div class="video-container">
-      <div id="player"></div>
+  <section class="video-container">
+    <div v-if="loading" class="v-Loading q-pa-md full-width fixed-top">
+      <q-card flat style="max-width: 100%;">
+        <q-skeleton style="min-height: 33vh" square />
+
+        <q-card-section>
+          <q-skeleton type="text" height="35px"  class="text-subtitle1" />
+          <q-skeleton type="text" height="35px"  width="80%" class="text-subtitle1" />
+          <q-skeleton type="text" height="35px" class="text-caption" />
+        </q-card-section>
+      </q-card>
     </div>
+
+    <div  id="player" class="v-Player"></div>
+  </section>
+
 </template>
 
 <script setup lang="ts">
-import {onMounted, onBeforeUnmount} from "vue";
+import {onBeforeUnmount, onMounted} from "vue";
 import {useVideoStore} from "~/stores/videoStore";
 import {useCommentaryStore} from "~/stores/commentaryStore";
-import {v4 as uuidV4 } from "uuid";
+import { v4 as uuidv4 } from "uuid";
 
 definePageMeta({
   middleware: "check-video-url",
@@ -17,9 +30,10 @@ definePageMeta({
 const videoStore = useVideoStore();
 const commentaryStore = useCommentaryStore();
 
-const { startAutoDisplayCommentary, stopAutoDisplayCommentary } = useAutoDisplayCommentary();
+const loading = ref<boolean>(true);
+const {startAutoDisplayCommentary, stopAutoDisplayCommentary} = useAutoDisplayCommentary();
 
-const loadYouTubeAPI = () => {
+const loadYouTubeAPI = (): Promise<void> => {
   return new Promise<void>((resolve) => {
     if (window.YT && window.YT.Player) {
       resolve();
@@ -36,96 +50,90 @@ const loadYouTubeAPI = () => {
   });
 };
 
-const getVideoIdFromUrl = (url: string): string | null => {
-  const match = url.match(
-      /^https:\/\/www\.youtube\.com\/watch\?v=([\w-]{11})$/
-  );
-  return match ? match[1] : null;
-};
-
-const initializePlayer = () => {
-  const videoId = getVideoIdFromUrl(videoStore.getVideoURL());
-  if (!videoId) return;
-
+const initializePlayer = (): void => {
+  const videoId = videoStore.getVideoId();
   const videoPlayer = new window.YT.Player("player", {
-    height: "100%",
-    width: "100%",
-    videoId: videoId,
+    videoId,
     events: {
       onReady: onPlayerReady,
     },
   });
+
   videoStore.setPlayer(videoPlayer);
+  videoStore.setPlayerSize(window.innerWidth);
 };
 
 const onPlayerReady = async (event: any) => {
   event.target.playVideo();
-  // 해설 생성 시작
-  await commentaryStore.generateCommentaries();
-  // SSE 완료 후 실행해야 함
-  startAutoDisplayCommentary();
+  loading.value = false;
 };
 
-// 서버와의 SSE 연결을 관리할 변수
 let eventSource: EventSource;
+
 
 onMounted(async () => {
   await loadYouTubeAPI();
   initializePlayer();
 
-  const requestId: String = uuidV4();
-  eventSource = new EventSource(`http://localhost:8080/sse/connect/${requestId}`);
+  const videoId = videoStore.getVideoId();
+  const clientId = uuidv4();
+  eventSource = new EventSource(`http://localhost:8080/sse/connect/${videoId}?clientId=${clientId}`);
+  eventSource.addEventListener("connect", () => {
+    console.log("서버와 연결")
+  })
 
-  eventSource.onmessage = (event) => {
-    console.log("Received message:", event.data);
-  };
+  eventSource.addEventListener("commentary", async (e: any) => {
+    const data = JSON.parse(e.data);
+    const { startTime, content } = data;
+    await commentaryStore.addCommentary(startTime, content);
+  });
 
   eventSource.onerror = (error) => {
     console.error("Error receiving SSE:", error);
+
+
   };
 });
 
 onBeforeUnmount(() => {
   stopAutoDisplayCommentary();
-  if(eventSource) {
+  if (eventSource) {
     console.log("eventSource close");
     eventSource.close()
   }
 });
 
+window.addEventListener('resize', () => videoStore.setPlayerSize(window.innerWidth));
+
 </script>
 
 <style scoped>
 .video-container {
-  flex: 1;
-  height: calc(100% - 90px);
-  margin-right: 450px;
-  padding-right: 450px;
-  background-color: black;
-  overflow-y: hidden;
-  position: fixed;
-  width:100%;
-
-}
-
-#player {
-  width: 100%;
+  position: relative;
   height: 100%;
+  min-width: 50%;
+  border:1px solid red;
+}
+.v-Loading {
+  width: 100%;
+  background-color: white;
+  height: 100%;
+  position: absolute;
+  z-index: 1001;
 }
 
 @media (max-width: 768px) {
   .video-container {
-    flex: 1;
-    width: 100%;
-    position: inherit;
-    height: 100%;
-    margin-right: 0;
-    padding-right: 0;
+    display: flex;
+    position: relative;
   }
 
   #player {
-    height: 40vw;
     width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
   }
 }
 </style>
