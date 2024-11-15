@@ -9,7 +9,7 @@ class TextMergerToFile:
 
     @staticmethod
     def initialize_file(request_id):
-        file_path = f"{request_id}.txt"
+        file_path = f"capstone_storage/{request_id}/original_{request_id}.txt"
         with open(file_path, "w") as f:
             pass
         logger.info(f"Initialized text file at {file_path} for request_id '{request_id}'.")
@@ -24,7 +24,7 @@ class TextMergerToFile:
             message (dict): {'request_id': str, 'chunk_id': int, 'transcription_text': str} 형식의 메시지
         """
         transcription_text = message.get("transcription_text", "")
-        file_path = f"{request_id}.txt"
+        file_path = f"capstone_storage/{request_id}/original_{request_id}.txt"
 
         with open(file_path, "a") as f:
             f.write(transcription_text + " ")  # 메시지 뒤에 공백 추가
@@ -42,7 +42,7 @@ class TextMergerToFile:
         Returns:
             str: 합쳐진 원본 텍스트
         """
-        file_path = f"{request_id}.txt"
+        file_path = f"capstone_storage/{request_id}/original_{request_id}.txt"  # 경로 수정
         with open(file_path, "r") as f:
             original_text = f.read().strip()
 
