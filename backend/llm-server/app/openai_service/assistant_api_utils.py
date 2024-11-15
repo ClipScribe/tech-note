@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 from openai import OpenAI
 from openai import AssistantEventHandler
 
+
 from loguru import logger
 
 # 환경 변수 로드

@@ -1,3 +1,4 @@
+
 import time
 import traceback
 
@@ -90,7 +91,6 @@ async def consume_stt_results(consumer, initial_messages, processors):
             request_id = stt_result.request_id
             chunk_id = stt_result.chunk_id
             transcription_text = stt_result.transcription_text
-
             message_processor = processors[request_id]
 
             # initial_messages에 request_id가 없다면 새로 초기화
@@ -134,8 +134,6 @@ async def consume_stt_results(consumer, initial_messages, processors):
                 await message_processor.create_feedbacks_for_explanations(chunk_resource_list)
                 #목차별 피드백 반영 설명문 생성
                 await message_processor.create_enhanced_explanations(chunk_resource_list)
-
-
     except Exception as e:
         error_details = traceback.format_exc()
         logger.error(f"STT 결과물 소비 중 오류 발생: {e}\n세부 정보:\n{error_details}")

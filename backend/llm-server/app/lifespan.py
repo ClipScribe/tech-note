@@ -1,3 +1,4 @@
+
 """
 from contextlib import asynccontextmanager
 
@@ -234,3 +235,4 @@ async def initialize_kafka_and_assistants():
 
     assistants = {'beginner': beginner_assistant, 'intermediate': intermediate_assistant, 'expert': expert_assistant}
     return initial_request_consumer, stt_result_consumer, producer, assistants
+
