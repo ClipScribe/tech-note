@@ -1,118 +1,105 @@
 import asyncio
 
-from loguru import logger
 
-from app.openai_service.EnhancedExplanationEventHandler import EnhancedExplanationEventHandler
-from app.openai_service.ExplanationEventHandler import ExplanationEventHandler
-from app.openai_service.FeedbackEventHandler import FeedbackEventHandler
-from app.openai_service.IndexEventHandler import IndexEventHandler
+from app.openai_service.event_handler.enhandced_event_handler import EnhancedExplanationEventHandler
+from app.openai_service.event_handler.explanation_event_handler import ExplanationEventHandler
+from app.openai_service.event_handler.feedback_event_handler import FeedbackEventHandler
+from app.openai_service.event_handler.index_event_handler import IndexEventHandler
 from app.openai_service.assistant_api_utils import *
 
-async def initiate(file_path:str):
-    vector_store = await create_vector_store()
-    logger.info(f"vector store 생성 : {vector_store.id}")
+# 로그 형식 통일 설정
+logger.add(
+    "file_{time}.log",  # 로그 파일 이름 형식
+    format="{time:YYYY-MM-DD HH:mm:ss} | {level} | Request ID: {extra[request_id]} | {message}",
+    level="INFO",
+)
 
-    file_batch = await add_file_to_vector_store(file_path, vector_store)
-    logger.info(f"text_file upload : {file_batch.id}")
 
-    thread = await create_thread_with_vector_store(vector_store.id)
-    logger.info(f"thread 생성: {thread.id}")
-    return thread, vector_store
+class MessageProcessor:
+    def __init__(self, request_id, assistant, explanation_level):
+        self.request_id = request_id
+        self.total_chunks = None
+        self.assistant = assistant
+        self.explanation_level = explanation_level
+        logger.bind(request_id=self.request_id)
 
-async def create_indices(thread, assistant, request_id):
-    logger.info("목차 생성 시작")
-    logger.info(f"run 시작 for thread_id = {thread.id}")
-    run = await run_stream(assistant.id, thread.id, event_handler = IndexEventHandler(request_id))
 
-# 설명문 생성 함수 (분할된 텍스트 파일들을 병렬 처리)
-async def create_explanations(dir_path, assistant, vector_store):
-    logger.info("설명문 생성 시작 - 분할된 텍스트 파일들 병렬 처리")
+    async def initiate(self, file_path: str):
 
-    tasks = []  # 병렬 처리할 작업 목록
-    chunk_files = os.listdir(dir_path)
-    total_chunks = len(chunk_files)
+        vector_store = await create_vector_store()
+        logger.info(f"Vector store 생성: {vector_store.id}")
 
-    # 분할된 텍스트 파일들이 있는 디렉토리 내의 모든 파일을 반복 처리
-    for chunk_index, chunk_file_name in enumerate(chunk_files):
-        full_path = os.path.join(dir_path, chunk_file_name)
+        file_batch = await add_file_to_vector_store(file_path, vector_store)
+        logger.info(f"Text file upload 완료: {file_batch.id}")
 
-        # 비동기 태스크 생성
-        tasks.append(create_chunk_explanation(full_path, assistant, chunk_index, total_chunks))
+        thread = await create_thread_with_vector_store(vector_store.id)
+        logger.info(f"Thread 생성: {thread.id}")
+        return thread, vector_store
 
-        # 모든 태스크를 병렬로 실행하고 각 태스크의 결과를 수집
+    async def create_indices(self, thread):
+        logger.info(f"목차 생성 시작 | Thread ID: {thread.id}")
+        run = await run_stream(self.assistant.id, thread.id, event_handler=IndexEventHandler(self.request_id))
+
+    async def create_explanations(self, dir_path):
+        logger.info("설명문 생성 시작 - 분할된 텍스트 파일들 병렬 처리")
+
+        chunk_files = os.listdir(dir_path)
+        self.total_chunks = len(chunk_files)
+
+        tasks = [
+            self.create_chunk_explanation(os.path.join(dir_path, chunk_file_name), idx)
+            for idx, chunk_file_name in enumerate(chunk_files)
+        ]
+
         results = await asyncio.gather(*tasks)
+        logger.info("모든 설명문 생성 작업이 완료되었습니다.")
+        return results
 
-        # 수집된 결과에서 thread와 vector_store를 추출하여 사용
-        for thread, vector_store in results:
-            logger.info(f"Thread ID: {thread.id}, Vector Store ID: {vector_store.id}를 피드백 작업에서 사용할 수 있음")
+    async def create_chunk_explanation(self, chunk_file_path, chunk_index):
+        thread, vector_store = await self.initiate(chunk_file_path)
+        event_handler = ExplanationEventHandler(
+            vector_store=vector_store, request_id=self.request_id, chunk_index=chunk_index
+        )
 
-        return results  # 결과를 반환하여 이후의 피드백 처리에 사용할 수 있게 함
+        logger.info(
+            f"설명문 생성 시작 | 파일: {chunk_file_path} | Thread ID: {thread.id} | 청크: {chunk_index + 1}/{self.total_chunks}")
+        await run_stream(self.assistant.id, thread.id, event_handler=event_handler)
 
+        logger.info(f"설명문 생성 완료 | Thread ID: {thread.id} | 청크: {chunk_index + 1}/{self.total_chunks}")
+        return thread, vector_store
 
-# 각 파일에 대해 설명문을 생성하고 벡터 스토어에 업로드하는 비동기 함수
-async def create_chunk_explanation(chunk_file_path, assistant, request_id, chunk_index, total_chunks):
+    async def create_feedbacks_for_explanations(self, results):
+        logger.info("피드백 텍스트 병렬 생성 시작")
+        tasks = [self.create_chunk_feedback(thread, vector_store, idx) for idx, (thread, vector_store) in
+                 enumerate(results)]
 
-    thread, vector_store = initiate(chunk_file_path)
+        await asyncio.gather(*tasks)
+        logger.info("모든 피드백 생성 작업이 완료되었습니다.")
 
-    # ExplanationEventHandler 생성
-    event_handler = ExplanationEventHandler(vector_store=vector_store, request_id = request_id ,chunk_index=chunk_index)
+    async def create_chunk_feedback(self, thread, vector_store, chunk_index):
+        feedback_event_handler = FeedbackEventHandler(
+            thread_id=thread.id, vector_store=vector_store, request_id=self.request_id, chunk_index=chunk_index
+        )
 
-    # 설명문 생성 시작
-    logger.info(f"{chunk_file_path}에 대한 설명문 생성을 시작합니다.")
-    run = await run_stream(assistant.id, thread.id, event_handler=event_handler)
+        logger.info(f"피드백 생성 시작 | Thread ID: {thread.id} | 청크: {chunk_index + 1}/{self.total_chunks}")
+        await run_stream(self.assistant.id, thread.id, event_handler=feedback_event_handler)
 
-    # 진행 상황 로그
-    logger.info(f"{thread.id}-- 설명문 생성 완료 ({chunk_index + 1}/{total_chunks})")
-    return thread, vector_store
+        logger.info(f"피드백 생성 완료 | Thread ID: {thread.id} | 청크: {chunk_index + 1}/{self.total_chunks}")
 
+    async def create_enhanced_explanations(self, results):
+        logger.info("피드백 반영 설명문 텍스트 병렬 생성 시작")
+        tasks = [self.create_enhanced_chunk_explanation(thread, vector_store, idx) for idx, (thread, vector_store) in
+                 enumerate(results)]
 
-# 피드백 텍스트를 병렬로 생성하는 함수
-async def create_feedbacks_for_explanations(results, assistant, request_id):
-    logger.info("피드백 텍스트 병렬 생성 시작")
+        await asyncio.gather(*tasks)
+        logger.info("모든 피드백 반영 설명문 생성 작업이 완료되었습니다.")
 
-    # 병렬 처리할 작업 목록
-    tasks = []
+    async def create_enhanced_chunk_explanation(self, thread, vector_store, chunk_index):
+        enhanced_explanation_event_handler = EnhancedExplanationEventHandler(
+            thread_id=thread.id, vector_store=vector_store, request_id=self.request_id, chunk_index=chunk_index
+        )
 
-    # 각 결과에서 thread와 vector_store를 사용하여 피드백 텍스트 생성 작업을 추가
-    for chunk_index,thread, vector_store in enumerate(results):
-        task = create_chunk_feedback(thread, assistant,vector_store,request_id=request_id,chunk_index = chunk_index)
-        tasks.append(task)
+        logger.info(f"피드백 반영 설명문 생성 시작 | Thread ID: {thread.id} | 청크: {chunk_index + 1}/{self.total_chunks}")
+        await run_stream(self.assistant.id, thread.id, event_handler=enhanced_explanation_event_handler)
 
-    # 모든 피드백 생성 태스크를 병렬로 실행
-    await asyncio.gather(*tasks)
-
-async def create_chunk_feedback(thread, assistant, vector_store, request_id, total_chunks, chunk_index):
-    logger.info(f"{thread.id}에 대한 피드백 텍스트 생성을 시작합니다.")
-
-    # 피드백 이벤트 핸들러 생성
-    feedback_event_handler = FeedbackEventHandler(thread_id=thread.id, vector_store=vector_store, request_id=request_id, chunk_index=chunk_index)
-
-    # 피드백 텍스트 생성 시작
-    await run_stream(assistant.id, thread.id, event_handler=feedback_event_handler)
-    logger.info(f"{thread.id}-- 설명문 피드백 생성 완료 ({chunk_index + 1})")
-
-# 설명문 생성 함수 (분할된 텍스트 파일들을 병렬 처리)
-async def create_enhanced_explanations(results, assistant):
-    logger.info("피드백 반영 설명문 텍스트 병렬 생성 시작")
-
-    # 병렬 처리할 작업 목록
-    tasks = []
-
-    # 각 결과에서 thread와 vector_store를 사용하여 피드백 텍스트 생성 작업을 추가
-    for thread, vector_store in results:
-        task = create_enhanced_chunk_explanation(thread, assistant)
-        tasks.append(task)
-
-    # 모든 피드백 생성 태스크를 병렬로 실행
-    await asyncio.gather(*tasks)
-
-
-# 각 파일에 대해 설명문을 생성하고 벡터 스토어에 업로드하는 비동기 함수
-async def create_enhanced_chunk_explanation(thread, assistant):
-    logger.info(f"{thread.id}에 대한 피드백 반영 설명문 텍스트 생성을 시작합니다.")
-
-    # 피드백 이벤트 핸들러 생성
-    enhanced_explanation_event_handler = EnhancedExplanationEventHandler(thread_id=thread.id, vector_store=vector_store)
-
-    # 피드백 텍스트 생성 시작
-    await run_stream(assistant.id, thread.id, event_handler=enhanced_explanation_event_handler)
+        logger.info(f"피드백 반영 설명문 생성 완료 | Thread ID: {thread.id} | 청크: {chunk_index + 1}/{self.total_chunks}")

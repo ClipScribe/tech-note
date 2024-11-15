@@ -1,10 +1,10 @@
 import asyncio
 import sys
-
+import json
+import os
 from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_transcript_api._errors import TranscriptsDisabled, VideoUnavailable
 from loguru import logger
-import os
 
 # 로그 포맷 설정 (필요에 따라 변경 가능)
 logger.remove()
@@ -70,15 +70,16 @@ async def download_transcript(video_id, language_code='en', save_dir='transcript
 
         # 자막 다운로드
         logger.info("Starting transcript download for video ID: {}", video_id)
-        # Fetch transcript asynchronously
         transcript = await asyncio.to_thread(selected_transcript.fetch)
-        transcript_text = '\n'.join([f"{entry['start']} - {entry['text']}" for entry in transcript])
 
-        # 파일 저장
+        # JSON 형식으로 각 줄 저장
         file_name = f"{video_id}_{language_code}.txt"
         file_path = os.path.join(save_dir, file_name)
         with open(file_path, 'w', encoding='utf-8') as f:
-            f.write(transcript_text)
+            for entry in transcript:
+                line = json.dumps({"start": entry['start'], "text": entry['text']}, ensure_ascii=False)
+                f.write(line + "\n")
+
         logger.info("Transcript saved to {}", file_path)
         return file_path
 
