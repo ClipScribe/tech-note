@@ -1,20 +1,19 @@
 import {type Ref, ref} from "vue";
-import type {ReturnType} from "birpc";
 
 export interface VideoStore {
     videoPlayer: Ref<any>;
-    videoURL: Ref<string | undefined>; // 비디오 URL
-    setVideoURL: (url: string) => void; // 비디오 URL 설정 메서드
-    getVideoURL: () => string; // 비디오 URL 반환 메서드
+    videoId: Ref<string>;
     setPlayer: (player: any) => void;
     getPlayer: () => any;
+    getVideoId: () => string;
     getCurrentVideoTime: () => number;
+    setPlayerSize: (windowWidth: number) => void;
+    setVideoId: (videoId: string) => void;
 }
 
 export const useVideoStore = defineStore('video', (): VideoStore => {
     const videoPlayer = ref<any> (null);
-    const videoURL = ref<string>();
-    const currentVideoTime = ref<number>(0);
+    const videoId = ref<string>('')
 
     const setPlayer = (player: any) => {
         videoPlayer.value = player;
@@ -22,22 +21,31 @@ export const useVideoStore = defineStore('video', (): VideoStore => {
 
     const getPlayer = () => videoPlayer.value;
 
-    const setVideoURL = (url: string) : void => {
-        videoURL.value = url;
+    const setVideoId = (vId: string) : void => {
+        videoId.value = vId;
     }
-    const getVideoURL = (): string => videoURL.value as string
+
+    const getVideoId = (): string => videoId.value;
 
     const getCurrentVideoTime = () :number => {
         return videoPlayer.value.getCurrentTime();
     }
 
+    const setPlayerSize = (windowWidth: number) => {
+        const videoRatio: number = windowWidth > 768 ? 0.5 : 1;
+        const width = windowWidth * videoRatio;
+        const height = width * (9 / 16);
+        videoPlayer.value.setSize(width, height);
+    }
+
     return {
         videoPlayer,
-        videoURL,
-        setVideoURL,
-        getVideoURL,
+        videoId,
+        getVideoId,
         setPlayer,
+        setVideoId,
         getPlayer,
         getCurrentVideoTime,
+        setPlayerSize
     }
 })
