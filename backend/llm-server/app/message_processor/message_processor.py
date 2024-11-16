@@ -1,6 +1,6 @@
 import asyncio
-
 from app.openai_service.event_handler.enhanced_event_handler import EnhancedExplanationEventHandler
+
 from app.openai_service.event_handler.explanation_event_handler import ExplanationEventHandler
 from app.openai_service.event_handler.feedback_event_handler import FeedbackEventHandler
 from app.openai_service.event_handler.index_event_handler import IndexEventHandler
@@ -80,7 +80,6 @@ class MessageProcessor:
 
         vector_store = await create_vector_store()
         logger.info(f"Vector store 생성: {vector_store.id}")
-
         #file_batch = await add_file_to_vector_store(vector_store_id=vector_store.id,file_path=file_path)
         #logger.info(f"Text file upload 완료: {file_batch.id}")
 
@@ -117,7 +116,6 @@ class MessageProcessor:
         results = await asyncio.gather(*tasks)
         logger.info("모든 설명문 생성 작업이 완료되었습니다.")
         return results
-
     # 병렬적으로 수행하기 위해 create explanation으로 asyncio로 thread를 개수만큼 바로 생성하고 요구를  보내도록 수정하기
     async def create_chunk_explanation(self, chunk_file_path, chunk_index, request_id):
         #thread, vector_store = await self.initiate(chunk_file_path)
@@ -183,4 +181,3 @@ class MessageProcessor:
         await run_stream(self.assistant.id, thread.id, event_handler=enhanced_explanation_event_handler, instructions=instructions)
 
         logger.info(f"피드백 반영 설명문 생성 완료 | Thread ID: {thread.id} | 청크: {chunk_index}/{self.total_chunks}")
-

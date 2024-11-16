@@ -1,4 +1,3 @@
-"""
 from contextlib import asynccontextmanager
 
 from aiokafka import AIOKafkaConsumer
@@ -10,7 +9,6 @@ from app.openai_service.assistans_config import *
 
 
 #나중에 이름, instruction, model 작성해놓은 config 파일 작성하면 됨
-
 @asynccontextmanager
 async def lifespan(app):
     logger.info("Starting FastAPI application with Kafka consumers and producer.")
@@ -34,13 +32,13 @@ async def lifespan(app):
 
     assistants = {'beginner': beginner_assistant, 'intermediate': intermediate_assistant, 'expert': expert_assistant}
 
+
     processors = {}
     initial_messages = {}
 
     # Kafka consumer 및 백그라운드 task 시작
     request_consumer_task = asyncio.create_task(consume_initial_requests(initial_request_consumer, initial_messages=initial_messages, assistants=assistants, processors=processors))
     stt_result_consumer_task = asyncio.create_task(consume_stt_results(stt_result_consumer, initial_messages=initial_messages, processors=processors))
-
 
     try:
         yield
