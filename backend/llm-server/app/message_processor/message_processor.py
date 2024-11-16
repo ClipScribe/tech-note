@@ -80,7 +80,6 @@ class MessageProcessor:
 
         vector_store = await create_vector_store()
         logger.info(f"Vector store 생성: {vector_store.id}")
-
         #file_batch = await add_file_to_vector_store(vector_store_id=vector_store.id,file_path=file_path)
         #logger.info(f"Text file upload 완료: {file_batch.id}")
 
@@ -172,6 +171,7 @@ class MessageProcessor:
         logger.info("모든 피드백 반영 설명문 생성 작업이 완료되었습니다.")
 
 
+
     async def create_enhanced_chunk_explanation(self, thread, chunk_index):
         enhanced_explanation_event_handler = EnhancedExplanationEventHandler(
             thread_id=thread.id, request_id=self.request_id, chunk_index=chunk_index, kafka_producer=self.producer
@@ -186,4 +186,3 @@ class MessageProcessor:
         await run_stream(self.assistant.id, thread.id, event_handler=enhanced_explanation_event_handler, instructions=instructions)
 
         logger.info(f"피드백 반영 설명문 생성 완료 | Thread ID: {thread.id} | 청크: {chunk_index}/{self.total_chunks}")
-

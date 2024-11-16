@@ -15,7 +15,6 @@ async def lifespan(app):
     logger.info("Starting FastAPI application with Kafka consumers and producer.")
 
     # Kafka 설정 초기화
-
     initial_request_consumer = AIOKafkaConsumer(
         LLM_INITIALIZATION_TOPIC, bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS, group_id="llm_initialization_group"
     )

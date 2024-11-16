@@ -12,7 +12,6 @@ api_key = os.environ.get('OPENAI_API_KEY')
 client = OpenAI(api_key=api_key)
 
 # Assistant 생성 함수
-
 async def create_assistant_model(name, instructions, model):
     logger.info("Assistant 모델 생성 중...")
     assistant = client.beta.assistants.create(
@@ -39,7 +38,6 @@ async def create_vector_store():
     return vector_store
 
 # 스레드에 메시지 추가 함수
-
 async def add_message_to_thread(thread_id: str, content):
     logger.info(f"스레드 {thread_id}에 메시지 추가 중...")
     message = client.beta.threads.messages.create(
@@ -56,7 +54,6 @@ async def add_file_to_vector_store(vector_store_id, file_path):
     file_stream = open(file_path, 'rb')
     logger.info("file upload 시작")
     file_batch = client.beta.vector_stores.file_batches.upload_and_poll(
-
         vector_store_id=vector_store_id, files=[file_stream]
     )
     logger.success("file upload완료")
@@ -73,7 +70,6 @@ async def run_assistant_thread(assistant_id: str, thread_id: str):
     return run
 
 #생성된 vector store를 사용하는 thread생성
-
 async def create_thread_with_vector_store(vector_store):
     logger.info(f"vector store: {vector_store.id}를 사용하는 thread 생성 시작")
     thread = client.beta.threads.create(
@@ -89,7 +85,6 @@ async def create_thread_with_vector_store(vector_store):
 
 # 스트리밍 실행 함수
 async def run_stream(assistant_id: str, thread_id: str, event_handler: AssistantEventHandler, instructions):
-
     logger.info("스트리밍 시작.")
     with client.beta.threads.runs.stream(
         thread_id=thread_id,

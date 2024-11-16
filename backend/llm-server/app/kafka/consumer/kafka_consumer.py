@@ -64,7 +64,6 @@ async def consume_initial_requests(consumer, producer ,initial_messages, assista
                     )
                     processors[request_id] = message_processor
 
-
     except Exception as e:
         logger.error(f"초기 메시지 소비 중 오류 발생: {e}")
     finally:
@@ -75,7 +74,6 @@ async def consume_stt_results(consumer, initial_messages, processors):
     STT 결과물을 소비하고 텍스트를 재구성하여 병합하는 함수.
     각 request_id별로 메시지를 순서에 맞게 병합하여 원본 텍스트로 재구성하고,
     전체 chunk_id가 다 모이면 initial_messages에서 삭제.
-
     Parameters:
         consumer: Kafka consumer 인스턴스
         initial_messages (dict): request_id를 키로 초기 메시지 정보를 저장하는 딕셔너리
