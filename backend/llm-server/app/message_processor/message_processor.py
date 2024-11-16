@@ -166,7 +166,6 @@ class MessageProcessor:
 
         await asyncio.gather(*tasks)
         logger.info("모든 피드백 반영 설명문 생성 작업이 완료되었습니다.")
-
     async def create_enhanced_chunk_explanation(self, thread, chunk_index):
         enhanced_explanation_event_handler = EnhancedExplanationEventHandler(
             thread_id=thread.id, request_id=self.request_id, chunk_index=chunk_index, kafka_producer=self.producer

@@ -87,6 +87,7 @@ async def consume_stt_results(consumer, initial_messages, processors):
             request_id = stt_result.request_id
             chunk_id = stt_result.chunk_id
             transcription_text = stt_result.transcription_text
+            message_processor = processors[request_id]
 
             message_processor = processors[request_id]
 

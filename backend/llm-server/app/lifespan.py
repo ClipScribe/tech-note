@@ -72,7 +72,6 @@ from app.kafka.producer.AsyncKafkaProducer import AsyncKafkaProducer
 from app.openai_service.assistants_config import *
 
 
-
 async def consume_initial_requests(consumer,producer ,initial_messages, assistants, processors, stt_retry_queue):
     """
     초기 메시지를 소비하여 request_id별 정보를 저장.
