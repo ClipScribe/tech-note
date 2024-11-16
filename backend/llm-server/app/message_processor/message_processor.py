@@ -118,7 +118,6 @@ class MessageProcessor:
         results = await asyncio.gather(*tasks)
         logger.info("모든 설명문 생성 작업이 완료되었습니다.")
         return results
-
     # 병렬적으로 수행하기 위해 create explanation으로 asyncio로 thread를 개수만큼 바로 생성하고 요구를  보내도록 수정하기
     async def create_chunk_explanation(self, chunk_file_path, chunk_index, request_id):
         #thread, vector_store = await self.initiate(chunk_file_path)
