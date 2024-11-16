@@ -22,7 +22,6 @@ async def consume_initial_requests(consumer, producer ,initial_messages, assista
         initial_messages (dict): 초기 메시지를 저장하는 딕셔너리, key는 request_id
         assistants: assitant dic-> beginner, intermediate, expert
         processors: request_id별 processor를 생성해 stt_result consumer에서 사용하기 위한 목적
-
     """
     logger.info("초기 메시지를 소비하기 시작합니다.")
 

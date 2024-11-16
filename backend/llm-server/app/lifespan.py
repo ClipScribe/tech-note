@@ -1,5 +1,3 @@
-
-"""
 from contextlib import asynccontextmanager
 
 from aiokafka import AIOKafkaConsumer
@@ -41,7 +39,6 @@ async def lifespan(app):
     # Kafka consumer 및 백그라운드 task 시작
     request_consumer_task = asyncio.create_task(consume_initial_requests(initial_request_consumer, initial_messages=initial_messages, assistants=assistants, processors=processors))
     stt_result_consumer_task = asyncio.create_task(consume_stt_results(stt_result_consumer, initial_messages=initial_messages, processors=processors))
-
 
     try:
         yield
