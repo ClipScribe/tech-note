@@ -69,7 +69,8 @@ from app.text_utils.text_utils import TextMergerToFile
 from app.kafka.consumer.kafka_consumer import *
 from app.kafka.kafka_config import *
 from app.kafka.producer.AsyncKafkaProducer import AsyncKafkaProducer
-from app.openai_service.assistans_config import *
+from app.openai_service.assistants_config import *
+
 
 
 async def consume_initial_requests(consumer,producer ,initial_messages, assistants, processors, stt_retry_queue):

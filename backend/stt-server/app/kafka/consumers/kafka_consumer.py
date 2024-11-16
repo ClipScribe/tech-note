@@ -60,7 +60,7 @@ async def consume():
 
 
 async def consume_request(consumer, processor):
-    logger.info("STT 결과물을 소비하기 시작합니다.")
+    logger.info("STT요청을 소비하기 시작합니다.")
     try:
         async for msg in consumer:
             # STTChunkResultMessage 클래스를 사용하여 메시지 파싱

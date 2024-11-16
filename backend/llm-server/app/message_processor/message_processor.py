@@ -90,12 +90,10 @@ class MessageProcessor:
 
     async def create_indices(self, thread):
         logger.info(f"목차 생성 시작 | Thread ID: {thread.id}")
-
         instruction = load_create_index_prompt(self.request_id)
         text = await read_text_file("capstone_storage/test_request_123/original_test_request_123.txt")
         instruction+=text
         run = await run_stream(self.assistant.id, thread.id, event_handler=IndexEventHandler(self.request_id, producer=self.producer), instructions=instruction)
-
 
     async def create_explanations(self, dir_path):
         logger.info("설명문 생성 시작 - 분할된 텍스트 파일들 병렬 처리")
@@ -168,8 +166,6 @@ class MessageProcessor:
 
         await asyncio.gather(*tasks)
         logger.info("모든 피드백 반영 설명문 생성 작업이 완료되었습니다.")
-
-
 
     async def create_enhanced_chunk_explanation(self, thread, chunk_index):
         enhanced_explanation_event_handler = EnhancedExplanationEventHandler(

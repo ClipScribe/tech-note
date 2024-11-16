@@ -11,7 +11,7 @@ from app.openai_service.assistant_api_utils import add_file_to_vector_store
 
 
 class FeedbackEventHandler(AssistantEventHandler):
-    def __init__(self, thread_id, vector_store, chunk_index, request_id):
+    def __init__(self, thread_id, chunk_index, request_id):
         super().__init__()
         self.request_id = request_id
         self.thread_id = thread_id  # 피드백이 속하는 thread ID
@@ -34,6 +34,5 @@ class FeedbackEventHandler(AssistantEventHandler):
         logger.info(f"피드백이 {feedback_file_path}에 저장되었습니다.")
 
         # 생성된 피드백 파일을 벡터 스토어에 업로드
-        await add_file_to_vector_store(self.vector_store.id,feedback_file_path)
-        logger.info(f"{self.thread_id} (목차 {self.chunk_index})에 대한 피드백이 벡터 스토어에 업로드되었습니다.")
-
+        #asyncio.run(add_file_to_vector_store(self.vector_store.id, feedback_file_path))
+        #logger.info(f"{self.thread_id} (목차 {self.chunk_index})에 대한 피드백이 벡터 스토어에 업로드되었습니다.")

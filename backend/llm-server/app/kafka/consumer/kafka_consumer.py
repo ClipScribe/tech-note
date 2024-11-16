@@ -8,10 +8,6 @@ from app.domain.kafka_message.stt_chunk_result_message import STTChunkResultMess
 
 from app.message_processor.message_processor import *
 from app.text_utils.text_utils import TextMergerToFile
-from app.message_processor.message_processor import *
-from app.text_utils.text_utils import TextMergerToFile
-
-
 
 async def consume_initial_requests(consumer, producer ,initial_messages, assistants, processors):
     """
@@ -135,7 +131,6 @@ async def consume_stt_results(consumer, initial_messages, processors):
                 await message_processor.create_feedbacks_for_explanations(chunk_resource_list)
                 #목차별 피드백 반영 설명문 생성
                 await message_processor.create_enhanced_explanations(chunk_resource_list)
-
 
     except Exception as e:
         error_details = traceback.format_exc()
