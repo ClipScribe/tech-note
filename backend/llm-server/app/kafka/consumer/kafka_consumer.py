@@ -1,4 +1,3 @@
-
 import time
 import traceback
 
@@ -23,7 +22,6 @@ async def consume_initial_requests(consumer, producer ,initial_messages, assista
         initial_messages (dict): 초기 메시지를 저장하는 딕셔너리, key는 request_id
         assistants: assitant dic-> beginner, intermediate, expert
         processors: request_id별 processor를 생성해 stt_result consumer에서 사용하기 위한 목적
-
     """
     logger.info("초기 메시지를 소비하기 시작합니다.")
 
@@ -71,7 +69,6 @@ async def consume_initial_requests(consumer, producer ,initial_messages, assista
         logger.error(f"초기 메시지 소비 중 오류 발생: {e}")
     finally:
         logger.info("초기 메시지 소비 종료.")
-
 
 async def consume_stt_results(consumer, initial_messages, processors):
     """
@@ -137,7 +134,6 @@ async def consume_stt_results(consumer, initial_messages, processors):
                 await message_processor.create_feedbacks_for_explanations(chunk_resource_list)
                 #목차별 피드백 반영 설명문 생성
                 await message_processor.create_enhanced_explanations(chunk_resource_list)
-
 
 
     except Exception as e:

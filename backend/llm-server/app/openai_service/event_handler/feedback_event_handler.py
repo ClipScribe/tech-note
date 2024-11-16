@@ -1,4 +1,3 @@
-
 import os
 
 import asyncio
@@ -11,7 +10,6 @@ from app.openai_service.assistant_api_utils import add_file_to_vector_store
 
 
 class FeedbackEventHandler(AssistantEventHandler):
-
     def __init__(self, thread_id, chunk_index, request_id):
         super().__init__()
         self.request_id = request_id
