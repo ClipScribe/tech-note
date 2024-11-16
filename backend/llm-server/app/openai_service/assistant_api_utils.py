@@ -12,7 +12,6 @@ api_key = os.environ.get('OPENAI_API_KEY')
 client = OpenAI(api_key=api_key)
 
 # Assistant 생성 함수
-
 async def create_assistant_model(name, instructions, model):
     logger.info("Assistant 모델 생성 중...")
     assistant = client.beta.assistants.create(

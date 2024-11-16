@@ -1,6 +1,3 @@
-
-
-"""
 from contextlib import asynccontextmanager
 
 from aiokafka import AIOKafkaConsumer
@@ -17,7 +14,6 @@ async def lifespan(app):
     logger.info("Starting FastAPI application with Kafka consumers and producer.")
 
     # Kafka 설정 초기화
-
     initial_request_consumer = AIOKafkaConsumer(
         LLM_INITIALIZATION_TOPIC, bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS, group_id="llm_initialization_group"
     )
@@ -41,11 +37,8 @@ async def lifespan(app):
     initial_messages = {}
 
     # Kafka consumer 및 백그라운드 task 시작
-
     request_consumer_task = asyncio.create_task(consume_initial_requests(initial_request_consumer, initial_messages=initial_messages, assistants=assistants, processors=processors))
     stt_result_consumer_task = asyncio.create_task(consume_stt_results(stt_result_consumer, initial_messages=initial_messages, processors=processors))
-
-
 
     try:
         yield
