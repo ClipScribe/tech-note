@@ -4,5 +4,5 @@ from pydantic import BaseModel
 
 class LLMResultMessage(BaseModel):
     request_id: str
-    timestamp: str
+    index_id: str
     content: str

@@ -6,8 +6,10 @@ KAFKA_BOOTSTRAP_SERVERS = "localhost:9092"  # 예: 로컬 호스트에 설치된
 #topic
 VIDEO_REQUEST_TOPIC = "video_request_topic"
 LLM_REQUEST_TOPIC = "llm_request_topic"
+LLM_INITIALIZATION_TOPIC = "llm_initialization_topic"
 LLM_CONTENT_TOPIC = "llm_content_topic"
 STT_RESULT_TOPIC = "stt_result_topic"
+LLM_INDEX_EVENTS = "llm_index_events"
 LLM_RESULT_TOPIC = "llm_result_topic"
 
 # 메시지의 전송에 대한 확인 수준
