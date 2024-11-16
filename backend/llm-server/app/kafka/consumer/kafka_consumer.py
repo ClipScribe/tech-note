@@ -1,4 +1,3 @@
-
 import time
 import traceback
 
@@ -9,7 +8,6 @@ from app.domain.kafka_message.stt_chunk_result_message import STTChunkResultMess
 
 from app.message_processor.message_processor import *
 from app.text_utils.text_utils import TextMergerToFile
-
 
 async def consume_initial_requests(consumer, producer ,initial_messages, assistants, processors):
     """
@@ -68,13 +66,11 @@ async def consume_initial_requests(consumer, producer ,initial_messages, assista
     finally:
         logger.info("초기 메시지 소비 종료.")
 
-
 async def consume_stt_results(consumer, initial_messages, processors):
     """
     STT 결과물을 소비하고 텍스트를 재구성하여 병합하는 함수.
     각 request_id별로 메시지를 순서에 맞게 병합하여 원본 텍스트로 재구성하고,
     전체 chunk_id가 다 모이면 initial_messages에서 삭제.
-
     Parameters:
         consumer: Kafka consumer 인스턴스
         initial_messages (dict): request_id를 키로 초기 메시지 정보를 저장하는 딕셔너리
@@ -91,6 +87,8 @@ async def consume_stt_results(consumer, initial_messages, processors):
             request_id = stt_result.request_id
             chunk_id = stt_result.chunk_id
             transcription_text = stt_result.transcription_text
+            message_processor = processors[request_id]
+
             message_processor = processors[request_id]
 
             # initial_messages에 request_id가 없다면 새로 초기화
@@ -134,6 +132,7 @@ async def consume_stt_results(consumer, initial_messages, processors):
                 await message_processor.create_feedbacks_for_explanations(chunk_resource_list)
                 #목차별 피드백 반영 설명문 생성
                 await message_processor.create_enhanced_explanations(chunk_resource_list)
+
     except Exception as e:
         error_details = traceback.format_exc()
         logger.error(f"STT 결과물 소비 중 오류 발생: {e}\n세부 정보:\n{error_details}")

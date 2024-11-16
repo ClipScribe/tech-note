@@ -1,5 +1,3 @@
-
-"""
 from contextlib import asynccontextmanager
 
 from aiokafka import AIOKafkaConsumer
@@ -11,7 +9,6 @@ from app.openai_service.assistans_config import *
 
 
 #나중에 이름, instruction, model 작성해놓은 config 파일 작성하면 됨
-
 @asynccontextmanager
 async def lifespan(app):
     logger.info("Starting FastAPI application with Kafka consumers and producer.")
@@ -34,6 +31,7 @@ async def lifespan(app):
     expert_assistant = await create_assistant_model(name=EXPERT_ASSISTANT_NAME, instructions=EXPER_INSTRUCTION, model=MODEL)
 
     assistants = {'beginner': beginner_assistant, 'intermediate': intermediate_assistant, 'expert': expert_assistant}
+
 
     processors = {}
     initial_messages = {}

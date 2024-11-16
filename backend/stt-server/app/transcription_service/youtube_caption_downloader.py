@@ -65,7 +65,6 @@ async def download_transcript(video_id, language_code='en', save_dir='transcript
         # 자막 다운로드
         logger.info("Starting transcript download for video ID: {}", video_id)
         transcript = await asyncio.to_thread(selected_transcript.fetch)
-        
         # JSON 배열 형식으로 저장
         file_name = f"{video_id}_{language_code}.json"
         file_path = os.path.join(save_dir, file_name)
